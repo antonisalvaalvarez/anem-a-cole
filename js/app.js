@@ -580,7 +580,11 @@ function pantallaUneix() {
   repetir = () => Veu.diu(FRASES.uneix);
   app.innerHTML = `
     ${barra({ repetir: true })}
-    <main class="uneix"><svg class="tauler"></svg></main>`;
+    <main class="uneix">
+      <div class="guia">${Array.from({ length: n }, (_, i) => `<span>${i + 1}</span>`).join('')}</div>
+      <svg class="tauler"></svg>
+    </main>`;
+  const guia = [...app.querySelectorAll('.guia span')];
 
   const svg = app.querySelector('.tauler');
   const { width: w, height: h } = svg.getBoundingClientRect();
@@ -607,10 +611,17 @@ function pantallaUneix() {
   let primerIntent = true;
   let bloquejat = false;
 
-  const marca = () => cercles.forEach((c, i) => {
-    c.classList.toggle('fet', i < actual);
-    c.classList.toggle('actual', i === actual);
-  });
+  const marca = () => {
+    cercles.forEach((c, i) => {
+      c.classList.toggle('fet', i < actual);
+      c.classList.toggle('actual', i === actual);
+    });
+    // Ajuda de dalt: els números ja units, pintats; el que toca buscar, fa pampallugues.
+    guia.forEach((g, i) => {
+      g.classList.toggle('fet', actual > 0 && i <= actual);
+      g.classList.toggle('toca', actual === 0 ? i === 0 : i === actual + 1);
+    });
+  };
   marca();
 
   const dibuixa = (pts, el) => el.setAttribute('d', 'M' + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L'));
@@ -1192,7 +1203,7 @@ function pantallaFutbol() {
   const maxNivell = FUTBOL_NIVELLS.length - 1;
   const nivell = Math.min(D().nivells.futbol, maxNivell);
   const { cercles } = FUTBOL_NIVELLS[nivell];
-  const jugada = aleatori(['bandes', 'atac', 'defensa', 'treure'].filter(j => j !== darreraJugada));
+  const jugada = aleatori(['bandes', 'atac', 'defensa', 'treure', 'desmarcar'].filter(j => j !== darreraJugada));
   darreraJugada = jugada;
   if (jugada === 'treure') return jugadaTreure(nivell, maxNivell);
 
@@ -1298,6 +1309,66 @@ function pantallaFutbol() {
       await mou(pilota, davanter.x + 20, davanter.y, 450);
       gol('Gol! Per la banda hi ha més espai!');
     }));
+    Veu.diu(frase);
+    return;
+  }
+
+  if (jugada === 'desmarcar') {
+    // Distància d'un punt a la línia de passada.
+    const aLinia = (p, a, b) => {
+      const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+      const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
+      return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+    };
+    const company = fesJugador('.blaus', '', 380, A / 2, 8);
+    const jo = fesJugador('.blaus', 'mobil jo', 660, A / 2, 9);
+    const vermells = [[600, A / 2], [720, A / 2 + 50], [520, 120], [520, A - 120]].map(([x, y], i) => fesJugador('.vermells', '', x, y, [5, 4, 6, 3][i]));
+    Object.assign(pilota, { x: company.x + 40, y: company.y }); posa(pilota);
+    const zona = Math.random() < 0.5 ? { x: 720, y: 110 } : { x: 720, y: A - 110 };
+    if (cercles) capaZones.innerHTML = `<circle cx="${zona.x}" cy="${zona.y}" r="75"/>`;
+    const lliure = () => dist(jo, company) > 150 && vermells.every(v => aLinia(v, pilota, jo) > 55 && dist(v, jo) > 110);
+    const frase = cercles
+      ? "El teu company té la pilota, però et marquen. Desmarca't! Porta el jugador de l'anell groc al cercle."
+      : "El teu company té la pilota, però et marquen. Desmarca't! Busca un lloc on no et tapi ningú.";
+    repetir = () => Veu.diu(frase);
+    const aMon = e => {
+      const p = svg.createSVGPoint();
+      p.x = e.clientX; p.y = e.clientY;
+      return p.matrixTransform(mon.getScreenCTM().inverse());
+    };
+    let agafat = null;
+    svg.addEventListener('pointerdown', e => {
+      if (acabat || dist(jo, aMon(e)) > 70) return;
+      svg.setPointerCapture(e.pointerId);
+      agafat = e.pointerId;
+      jo.g.classList.add('agafat');
+    });
+    svg.addEventListener('pointermove', e => {
+      if (agafat !== e.pointerId) return;
+      const p = aMon(e);
+      jo.x = Math.max(30, Math.min(L - 30, p.x));
+      jo.y = Math.max(30, Math.min(A - 30, p.y));
+      posa(jo);
+    });
+    const deixa = async e => {
+      if (agafat !== e.pointerId) return;
+      agafat = null;
+      jo.g.classList.remove('agafat');
+      const bo = cercles ? dist(jo, zona) <= 75 && lliure() : lliure();
+      if (!bo) {
+        if (!cercles || dist(jo, { x: 660, y: A / 2 }) > 60) {
+          primerIntent = false;
+          Veu.diu(cercles ? 'Porta-ho al cercle!' : 'Encara et tapen. Busca un lloc on no hi hagi ningú entre tu i la pilota.');
+        }
+        return;
+      }
+      acabat = true;
+      await mou(pilota, jo.x, jo.y, 550);
+      await Promise.all([mou(jo, 880, A / 2 + (jo.y < A / 2 ? -60 : 60), 700), mou(pilota, 900, A / 2 + (jo.y < A / 2 ? -60 : 60), 700)]);
+      gol("Gol! Desmarcat, et poden passar la pilota!");
+    };
+    svg.addEventListener('pointerup', deixa);
+    svg.addEventListener('pointercancel', deixa);
     Veu.diu(frase);
     return;
   }

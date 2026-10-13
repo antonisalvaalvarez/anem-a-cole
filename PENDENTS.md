@@ -31,6 +31,6 @@
 ## Idees per a més endavant
 - Més jocs de números: més gran / més petit, sumes amb dibuixos.
 - El tren dels números, uneix i descobreix un dibuix.
-- Més jugades de futbol (desmarcar-se, xutar a porteria buida, córner).
+- Més jugades de futbol (xutar a porteria buida, córner).
 - Síl·labes inverses (AM, EL) i de tres lletres.
 - Frases curtes.

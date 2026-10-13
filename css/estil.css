@@ -332,7 +332,18 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 }
 
 /* Uneix */
-.uneix { flex: 1; padding: 2vmin 3vmin 3vmin; display: flex; }
+.uneix { flex: 1; padding: 1vmin 3vmin 3vmin; display: flex; flex-direction: column; gap: 1.5vmin; min-height: 0; }
+.guia { display: flex; justify-content: center; flex-wrap: wrap; gap: 1vmin; }
+.guia span {
+  min-width: 6.5vmin; height: 6.5vmin; padding: 0 1vmin;
+  border-radius: 99px; display: grid; place-items: center;
+  background: var(--blanc); color: var(--suau);
+  font-size: 3.8vmin; font-weight: 800;
+  box-shadow: 0 0.4vmin 0 rgba(43,45,66,0.08);
+  transition: background 0.2s, color 0.2s;
+}
+.guia span.fet { background: var(--verd); color: var(--blanc); }
+.guia span.toca { background: var(--sol); color: var(--tinta); animation: batec 1.2s ease-in-out infinite; }
 .tauler {
   flex: 1;
   background: var(--blanc);
@@ -451,6 +462,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .camp .mobil, .camp .company { cursor: grab; }
 .camp .mobil circle, .camp .company circle { animation: batec-jugador 1.6s ease-in-out infinite; }
 @keyframes batec-jugador { 50% { stroke: #FFE29A; } }
+.camp .jo circle { stroke: #FFD23F; stroke-width: 9; }
 .camp .agafat circle { stroke: #FFE29A; stroke-width: 9; animation: none; }
 .camp .pilota circle { fill: #fff; stroke: #2B2D42; stroke-width: 3; }
 .camp .pilota path { fill: #2B2D42; stroke: none; }
