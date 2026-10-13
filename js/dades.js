@@ -124,7 +124,7 @@ const LABERINT_NIVELLS = [
   { mida: [14, 9], numeros: 10, amagats: 0.7 },
 ];
 
-// Futbol: al primer nivell hi ha cercles que diuen on va cada jugador i l'engany és lent; després, no.
+// Futbol: al primer nivell hi ha cercles que diuen on va cada jugador, l'engany és lent i el porter està quiet; després, no.
 const FUTBOL_NIVELLS = [{ cercles: true, rapid: false }, { cercles: false, rapid: true }];
 
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).

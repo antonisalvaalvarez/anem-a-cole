@@ -1197,15 +1197,114 @@ function jugadaTreure(nivell, maxNivell) {
   Veu.diu('Treu-li la pilota! Fixa\'t en el cos.').then(() => { if (elTorn === torn) engany(); });
 }
 
+// Xutar a porteria buida: tocar la porteria on no hi ha el porter.
+function jugadaXut(nivell, maxNivell) {
+  const elTorn = torn;
+  const { rapid: esMou } = FUTBOL_NIVELLS[nivell];
+  const P = { x0: 70, x1: 530, y0: 90, y1: 330 }; // pals i travesser
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="treure">
+      <svg class="escena xut" viewBox="0 0 600 520">
+        <rect class="cel-escena" x="0" y="0" width="600" height="330"/>
+        <rect class="terra" x="0" y="330" width="600" height="190"/>
+        <rect class="xarxa" x="${P.x0}" y="${P.y0}" width="${P.x1 - P.x0}" height="${P.y1 - P.y0}"/>
+        <path class="pals" d="M${P.x0},${P.y1}V${P.y0}H${P.x1}V${P.y1}"/>
+        <g class="porter-escena">
+          <path class="bracos" d="M-40,175l-48,-45M40,175l48,-45"/>
+          <path class="cames" d="M-16,265l-18,62M16,265l18,62"/>
+          <rect x="-42" y="160" width="84" height="110" rx="26"/>
+          <circle class="cap" cx="0" cy="128" r="32"/>
+        </g>
+        <g class="pilota-escena" transform="translate(300,460)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
+      </svg>
+    </main>`;
+  const escena = app.querySelector('.escena');
+  const porter = app.querySelector('.porter-escena');
+  const pil = app.querySelector('.pilota-escena');
+  let px = Math.random() < 0.5 ? 150 : 450; // on és el porter
+  let fase = 0;
+  let primerIntent = true;
+  let ocupat = false;
+  const posaPorter = () => porter.setAttribute('transform', `translate(${px},0)`);
+  posaPorter();
+
+  // Al nivell 2 el porter va d'un pal a l'altre.
+  let abans = performance.now();
+  const passeja = ara => {
+    if (elTorn !== torn) return;
+    if (esMou && !ocupat) {
+      fase += (ara - abans) / 1000 * 1.6;
+      px = 300 + Math.sin(fase) * 160;
+      posaPorter();
+    }
+    abans = ara;
+    requestAnimationFrame(passeja);
+  };
+  if (esMou) requestAnimationFrame(passeja);
+
+  const vola = (x, y, ms) => new Promise(r => {
+    const t0 = performance.now();
+    const pas = ara => {
+      if (elTorn !== torn) return r();
+      const t = Math.min(1, (ara - t0) / ms);
+      const cx = 300 + (x - 300) * t, cy = 460 + (y - 460) * t, s = 1 - 0.45 * t;
+      pil.setAttribute('transform', `translate(${cx},${cy}) scale(${s})`);
+      t < 1 ? requestAnimationFrame(pas) : r();
+    };
+    requestAnimationFrame(pas);
+  });
+
+  const aEscena = e => {
+    const p = escena.createSVGPoint();
+    p.x = e.clientX; p.y = e.clientY;
+    return p.matrixTransform(escena.getScreenCTM().inverse());
+  };
+
+  escena.addEventListener('pointerdown', async e => {
+    if (ocupat) return;
+    const p = aEscena(e);
+    if (p.x < P.x0 || p.x > P.x1 || p.y < P.y0 || p.y > P.y1) {
+      if (p.y < 400) Veu.diu('Toca dins la porteria!');
+      return;
+    }
+    ocupat = true;
+    So.encert();
+    await vola(p.x, p.y, 420);
+    if (elTorn !== torn) return;
+    // El porter hi arriba si la pilota va a prop seu.
+    if (Math.abs(p.x - px) < 115) {
+      primerIntent = false;
+      pil.setAttribute('transform', `translate(${px},${200}) scale(0.55)`);
+      await Veu.diu("El porter l'ha aturada! Xuta on no hi ha el porter.");
+      if (elTorn !== torn) return;
+      pil.setAttribute('transform', 'translate(300,460)');
+      ocupat = false;
+      return;
+    }
+    escena.classList.add('gol');
+    So.premi();
+    await Veu.seqüencia(['Gol! On no hi ha el porter!', felicita()]);
+    if (elTorn !== torn) return;
+    await apunta('futbol', primerIntent, maxNivell);
+    if (elTorn === torn) pantallaFutbol();
+  });
+
+  const frase = esMou ? 'El porter es mou. Xuta quan hi hagi un forat!' : 'Xuta a porteria! Toca on no hi ha el porter.';
+  repetir = () => Veu.diu(frase);
+  Veu.diu(frase);
+}
+
 function pantallaFutbol() {
   torn++;
   const elTorn = torn;
   const maxNivell = FUTBOL_NIVELLS.length - 1;
   const nivell = Math.min(D().nivells.futbol, maxNivell);
   const { cercles } = FUTBOL_NIVELLS[nivell];
-  const jugada = aleatori(['bandes', 'atac', 'defensa', 'treure', 'desmarcar'].filter(j => j !== darreraJugada));
+  const jugada = aleatori(['bandes', 'atac', 'defensa', 'treure', 'desmarcar', 'xut'].filter(j => j !== darreraJugada));
   darreraJugada = jugada;
   if (jugada === 'treure') return jugadaTreure(nivell, maxNivell);
+  if (jugada === 'xut') return jugadaXut(nivell, maxNivell);
 
   app.innerHTML = `${barra({ repetir: true })}<main class="futbol"><svg class="camp"></svg><button class="boto-joga" hidden aria-label="Juga">⚽</button></main>`;
   const svg = app.querySelector('.camp');
