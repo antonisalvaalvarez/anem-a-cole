@@ -30,6 +30,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - Lletres, Síl·labes, Paraules.
 - Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit en ordre sense creuar línies; nivells amb corbes obligatòries i fins al 15; si es creuen, "Tornem-hi!", mai "has perdut").
 - Globus (explotar els globus en ordre mentre pugen; si se'n va el que busca, torna a sortir) i Parelles (memòria: número amb quantitat o lletra amb dibuix).
+- Laberint (portar el cotxe amb el dit recollint els números en ordre i sortir per la bandera; les parets no deixen passar).
 - Han de ser **ràpids**: frases curtes, poques esperes, passar sol a la pregunta següent.
 
 ## Fora d'abast

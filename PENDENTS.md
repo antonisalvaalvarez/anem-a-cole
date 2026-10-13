@@ -15,6 +15,9 @@
 - [ ] Globus: si la velocitat és bona i si es poden tocar bé quan estan junts.
 - [ ] Parelles: si entén el joc i si les cartes es veuen prou grans.
 
+## Per provar (versió 5)
+- [ ] Laberint: si és prou difícil i si el cotxe es mou bé amb el dit.
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).
@@ -24,6 +27,7 @@
 
 ## Idees per a més endavant
 - Més jocs de números: més gran / més petit, sumes amb dibuixos.
-- Laberint, el tren dels números, uneix i descobreix un dibuix.
+- El tren dels números, uneix i descobreix un dibuix.
+- Jocs amb tema de futbol (vegeu la conversa).
 - Síl·labes inverses (AM, EL) i de tres lletres.
 - Frases curtes.

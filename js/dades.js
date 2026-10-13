@@ -114,6 +114,16 @@ const GLOBUS_NIVELLS = [
 const PARELLES_NIVELLS = [3, 4, 6];
 const PARELLES_MAX_QUANTITAT = 8; // a les cartes de dibuixos, com a molt 8 coses
 
+// Laberint: mida (caselles de llarg × de curt), quants números cal recollir
+// i quina part d'aquests està amagada en carrerons fora del camí bo.
+const LABERINT_NIVELLS = [
+  { mida: [7, 5], numeros: 5, amagats: 0 },
+  { mida: [9, 6], numeros: 7, amagats: 0.3 },
+  { mida: [10, 7], numeros: 10, amagats: 0.3 },
+  { mida: [12, 8], numeros: 10, amagats: 0.5 },
+  { mida: [14, 9], numeros: 10, amagats: 0.7 },
+];
+
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).
 const ADHESIUS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐵',
   '🐧', '🦉', '🐢', '🐬', '🦋', '🐞', '🦄', '🐲', '🦒', '🐘'];
@@ -128,7 +138,7 @@ const FRASES = {
   menu: {
     lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules',
     numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números',
-    globus: 'Globus', parelles: 'Parelles', premis: 'Els meus premis',
+    globus: 'Globus', parelles: 'Parelles', laberint: 'Laberint', premis: 'Els meus premis',
   },
   // Curtes, perquè el joc vagi ràpid.
   encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],

@@ -207,6 +207,10 @@ function pantallaInici(saluda = false) {
         <span class="dibuix">🃏</span>
         <span class="nom">Parelles</span>
       </button>
+      <button class="targeta t-laberint" data-anar="laberint">
+        <span class="dibuix">🚗</span>
+        <span class="nom">Laberint</span>
+      </button>
     </main>
     <button class="boto-adult" id="adult" aria-label="Adults: mantén premut">
       <svg class="anell" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/></svg>
@@ -220,7 +224,7 @@ function pantallaInici(saluda = false) {
     ({
       lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules,
       numeros: pantallaNumeros, compta: pantallaCompta, uneix: pantallaUneix,
-      globus: pantallaGlobus, parelles: pantallaParelles,
+      globus: pantallaGlobus, parelles: pantallaParelles, laberint: pantallaLaberint,
     })[on]();
   });
   preparaBotoAdult(document.getElementById('adult'));
@@ -860,6 +864,218 @@ function pantallaParelles() {
   Veu.diu(frase);
 }
 
+/* ---------- 9. Laberint ---------- */
+// Fa un laberint de cols × files. Cada casella diu si té paret a dalt (d), dreta (r), baix (b) i esquerra (e).
+function fesLaberint(cols, files) {
+  const c = Array.from({ length: files }, () => Array.from({ length: cols }, () => ({ d: 1, r: 1, b: 1, e: 1, vista: 0 })));
+  const pila = [[0, 0]];
+  c[0][0].vista = 1;
+  const dirs = [[0, -1, 'd', 'b'], [1, 0, 'r', 'e'], [0, 1, 'b', 'd'], [-1, 0, 'e', 'r']];
+  while (pila.length) {
+    const [x, y] = pila[pila.length - 1];
+    const veins = dirs.filter(([dx, dy]) => c[y + dy]?.[x + dx] && !c[y + dy][x + dx].vista);
+    if (!veins.length) { pila.pop(); continue; }
+    const [dx, dy, p, q] = aleatori(veins);
+    c[y][x][p] = 0;
+    c[y + dy][x + dx][q] = 0;
+    c[y + dy][x + dx].vista = 1;
+    pila.push([x + dx, y + dy]);
+  }
+  return c;
+}
+
+// Es pot passar de (x,y) a la casella del costat (dx,dy)?
+function obert(c, x, y, dx, dy) {
+  const cel = c[y]?.[x];
+  if (!cel || !c[y + dy]?.[x + dx]) return false;
+  return !(dx === 1 ? cel.r : dx === -1 ? cel.e : dy === 1 ? cel.b : cel.d);
+}
+
+// Distància pel camí des d'una casella a totes les altres.
+function distancies(c, x0, y0) {
+  const d = c.map(f => f.map(() => Infinity));
+  d[y0][x0] = 0;
+  const cua = [[x0, y0]];
+  while (cua.length) {
+    const [x, y] = cua.shift();
+    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+      if (obert(c, x, y, dx, dy) && d[y + dy][x + dx] === Infinity) {
+        d[y + dy][x + dx] = d[y][x] + 1;
+        cua.push([x + dx, y + dy]);
+      }
+    }
+  }
+  return d;
+}
+
+function pantallaLaberint() {
+  torn++;
+  const elTorn = torn;
+  const maxNivell = LABERINT_NIVELLS.length - 1;
+  const nivell = Math.min(D().nivells.laberint, maxNivell);
+  const { mida: [llarg, curt], numeros: N, amagats } = LABERINT_NIVELLS[nivell];
+  app.innerHTML = `${barra({ repetir: true })}<main class="laberint"><svg class="tauler-laberint"></svg></main>`;
+  const svg = app.querySelector('.tauler-laberint');
+  const caixa = svg.getBoundingClientRect();
+  const horitzontal = caixa.width >= caixa.height;
+  const [cols, files] = horitzontal ? [llarg, curt] : [curt, llarg];
+  const C = Math.min(caixa.width / cols, caixa.height / files);
+  const W = C * cols, H = C * files;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.maxWidth = `${W}px`;
+  svg.style.maxHeight = `${H}px`;
+
+  const lab = fesLaberint(cols, files);
+  // Sortida a una cantonada i la meta a la cantonada contrària.
+  const cantos = [[0, 0], [cols - 1, 0], [0, files - 1], [cols - 1, files - 1]];
+  const k = Math.floor(Math.random() * 4);
+  const [sx, sy] = cantos[k];
+  const [mx, my] = cantos[3 - k];
+  const dist = distancies(lab, sx, sy);
+  const clau = (x, y) => `${x},${y}`;
+
+  // Camí bo de la sortida a la meta.
+  const camíBo = [];
+  for (let x = mx, y = my; ;) {
+    camíBo.unshift({ x, y });
+    if (x === sx && y === sy) break;
+    const pas = [[0, -1], [1, 0], [0, 1], [-1, 0]].find(([dx, dy]) => obert(lab, x, y, dx, dy) && dist[y + dy][x + dx] === dist[y][x] - 1);
+    x += pas[0]; y += pas[1];
+  }
+  const alCamí = new Set(camíBo.map(p => clau(p.x, p.y)));
+
+  // On van els números: uns quants al camí bo i, als nivells alts, la resta amagats en carrerons.
+  const lliures = [];
+  lab.forEach((f, y) => f.forEach((cel, x) => {
+    if ((x === sx && y === sy) || (x === mx && y === my)) return;
+    lliures.push({ x, y, camí: alCamí.has(clau(x, y)), carreró: 4 - (cel.d + cel.r + cel.b + cel.e) === 1, d: dist[y][x] });
+  }));
+  const nAmagats = Math.min(Math.round(N * amagats), lliures.filter(c => !c.camí).length);
+  const separats = (llista, n) => {
+    const tria = [];
+    for (const c of barreja(llista)) {
+      if (tria.length === n) break;
+      if (tria.every(t => Math.abs(t.x - c.x) + Math.abs(t.y - c.y) >= 2)) tria.push(c);
+    }
+    return tria;
+  };
+  const amagatsLlocs = separats(lliures.filter(c => !c.camí).sort((a, b) => b.carreró - a.carreró).slice(0, nAmagats * 3), nAmagats);
+  const alCamíLlocs = separats(lliures.filter(c => c.camí && amagatsLlocs.every(a => a.x !== c.x || a.y !== c.y)), N - amagatsLlocs.length);
+  // Els numerem segons l'ordre en què es troben anant cap a la meta (com més a prop de la sortida, més petit).
+  const llocs = [...amagatsLlocs, ...alCamíLlocs];
+  // Si no n'hi caben prou separats, n'afegim on hi hagi lloc.
+  for (const c of barreja(lliures)) {
+    if (llocs.length >= N) break;
+    if (llocs.every(l => l.x !== c.x || l.y !== c.y)) llocs.push(c);
+  }
+  llocs.sort((a, b) => a.d - b.d);
+  const numeros = llocs.map((l, i) => ({ ...l, n: i + 1, agafat: false }));
+  const total = numeros.length;
+
+  let seguent = 1;
+  const frase = () => (seguent <= total
+    ? `Recull els números en ordre i surt per la bandera. Busca ${articleNum(seguent)}.`
+    : 'Ja els tens tots! Ara, a la bandera.');
+  repetir = () => Veu.diu(frase());
+
+  let parets = '';
+  lab.forEach((f, y) => f.forEach((cel, x) => {
+    const X = x * C, Y = y * C;
+    if (cel.d) parets += `M${X},${Y}h${C}`;
+    if (cel.e) parets += `M${X},${Y}v${C}`;
+    if (y === files - 1 && cel.b) parets += `M${X},${Y + C}h${C}`;
+    if (x === cols - 1 && cel.r) parets += `M${X + C},${Y}v${C}`;
+  }));
+  const gruix = Math.max(4, C * 0.09);
+  svg.innerHTML = `
+    <path class="rastre" stroke-width="${C * 0.26}" d=""/>
+    <path class="parets" stroke-width="${gruix}" d="${parets}"/>
+    <text class="meta" x="${(mx + 0.5) * C}" y="${(my + 0.5) * C}" font-size="${C * 0.62}">🏁</text>
+    ${numeros.map(o => `<g class="desti" data-n="${o.n}"><circle cx="${(o.x + 0.5) * C}" cy="${(o.y + 0.5) * C}" r="${C * 0.34}"/><text x="${(o.x + 0.5) * C}" y="${(o.y + 0.5) * C}" font-size="${C * 0.42}">${o.n}</text></g>`).join('')}
+    <text class="cotxe" font-size="${C * 0.58}">🚗</text>`;
+  const cotxe = svg.querySelector('.cotxe');
+  const rastre = svg.querySelector('.rastre');
+  let pos = { x: sx, y: sy };
+  const camí = [pos];
+  const colloca = () => {
+    cotxe.setAttribute('x', (pos.x + 0.5) * C);
+    cotxe.setAttribute('y', (pos.y + 0.5) * C);
+    rastre.setAttribute('d', 'M' + camí.map(p => `${(p.x + 0.5) * C},${(p.y + 0.5) * C}`).join('L'));
+  };
+  colloca();
+
+  let arrossega = null;
+  let primerIntent = true;
+  let acabat = false;
+  let darrerAvis = null;
+
+  const casellaDe = e => {
+    const r = svg.getBoundingClientRect();
+    return { x: Math.floor((e.clientX - r.left) / r.width * cols), y: Math.floor((e.clientY - r.top) / r.height * files) };
+  };
+
+  async function guanya() {
+    acabat = true;
+    svg.classList.add('acabat');
+    So.premi();
+    await Veu.diu(felicita());
+    if (elTorn !== torn) return;
+    await apunta('laberint', primerIntent, maxNivell);
+    if (elTorn === torn) pantallaLaberint();
+  }
+
+  function arribaA(x, y) {
+    const lloc = clau(x, y);
+    if (darrerAvis === lloc) return;
+    darrerAvis = lloc;
+    if (x === mx && y === my) {
+      if (seguent > total) return guanya();
+      return Veu.diu(`Encara en falten. Busca ${articleNum(seguent)}.`);
+    }
+    const o = numeros.find(o => o.x === x && o.y === y && !o.agafat);
+    if (!o) { darrerAvis = null; return; }
+    if (o.n === seguent) {
+      o.agafat = true;
+      svg.querySelector(`.desti[data-n="${o.n}"]`).classList.add('agafat');
+      So.encert();
+      seguent++;
+      Veu.diu(seguent > total ? `${NUMEROS[o.n]}! Ara, a la bandera.` : NUMEROS[o.n]);
+    } else {
+      primerIntent = false;
+      Veu.diu(`Aquest és ${articleNum(o.n)}. Primer, busca ${articleNum(seguent)}.`);
+    }
+  }
+
+  svg.addEventListener('pointerdown', e => {
+    if (acabat) return;
+    const c = casellaDe(e);
+    if (Math.abs(c.x - pos.x) + Math.abs(c.y - pos.y) > 1) return;
+    svg.setPointerCapture(e.pointerId);
+    arrossega = e.pointerId;
+  });
+  svg.addEventListener('pointermove', e => {
+    if (arrossega !== e.pointerId || acabat) return;
+    const c = casellaDe(e);
+    // Avança casella a casella cap al dit; les parets no deixen passar.
+    for (let i = 0; i < 12 && (c.x !== pos.x || c.y !== pos.y) && !acabat; i++) {
+      const dx = Math.sign(c.x - pos.x), dy = Math.sign(c.y - pos.y);
+      const opcions = Math.abs(c.x - pos.x) >= Math.abs(c.y - pos.y) ? [[dx, 0], [0, dy]] : [[0, dy], [dx, 0]];
+      const pas = opcions.find(([a, b]) => (a || b) && obert(lab, pos.x, pos.y, a, b));
+      if (!pas) break;
+      pos = { x: pos.x + pas[0], y: pos.y + pas[1] };
+      // Si torna enrere, esborra el rastre.
+      const abans = camí.findIndex(p => p.x === pos.x && p.y === pos.y);
+      if (abans >= 0) camí.length = abans + 1; else camí.push(pos);
+      colloca();
+      arribaA(pos.x, pos.y);
+    }
+  });
+  const deixa = e => { if (arrossega === e.pointerId) arrossega = null; };
+  svg.addEventListener('pointerup', deixa);
+  svg.addEventListener('pointercancel', deixa);
+  Veu.diu(frase());
+}
+
 /* ---------- Mode adult ---------- */
 // Nivell més alt de cada joc.
 function maxNivells() {
@@ -873,6 +1089,7 @@ function maxNivells() {
     uneix: UNEIX_NIVELLS.length - 1,
     globus: GLOBUS_NIVELLS.length - 1,
     parelles: PARELLES_NIVELLS.length - 1,
+    laberint: LABERINT_NIVELLS.length - 1,
   };
 }
 

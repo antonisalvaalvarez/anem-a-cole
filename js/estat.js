@@ -7,8 +7,8 @@ const Estat = (() => {
       v2: true,
       estrelles: 0,
       adhesius: 0,
-      nivells: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0 },
-      seguits: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0 },
+      nivells: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0, laberint: 0 },
+      seguits: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0, laberint: 0 },
       vistes: [], // lletres que ja s'han presentat
       ajustos: {
         lletres: [...LLETRES_INICIALS],
