@@ -39,13 +39,16 @@ const ICONA = {
   casa: '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>',
   altaveu: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
   engranatge: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg>',
-  endavant: '<svg viewBox="0 0 24 24"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>',
+  uneix: '<svg viewBox="0 0 24 24" class="icona-uneix"><path d="M5 17 9 7l6 9 4-10"/><circle cx="5" cy="17" r="2.2"/><circle cx="9" cy="7" r="2.2"/><circle cx="15" cy="16" r="2.2"/><circle cx="19" cy="6" r="2.2"/></svg>',
 };
 
-function barra({ inici = true, repetir = null } = {}) {
+function barra({ inici = true, repetir = null, premis = false } = {}) {
+  const esquerra = inici
+    ? `<button class="boto-rodo" data-accio="inici" aria-label="Inici">${ICONA.casa}</button>`
+    : premis ? `<button class="boto-rodo boto-premis" data-accio="premis" aria-label="Premis">${D().adhesius ? ADHESIUS[D().adhesius - 1] : '🎁'}</button>` : '<span></span>';
   return `
     <header class="barra">
-      ${inici ? `<button class="boto-rodo" data-accio="inici" aria-label="Inici">${ICONA.casa}</button>` : '<span></span>'}
+      ${esquerra}
       <div class="comptador" aria-label="Estrelles"><span class="estrella">⭐</span><b>${D().estrelles}</b></div>
       ${repetir ? `<button class="boto-rodo boto-veu" data-accio="repetir" aria-label="Torna-ho a dir">${ICONA.altaveu}</button>` : '<span></span>'}
     </header>`;
@@ -58,6 +61,7 @@ app.addEventListener('click', e => {
   const b = e.target.closest('[data-accio]');
   if (!b) return;
   if (b.dataset.accio === 'inici') pantallaInici();
+  if (b.dataset.accio === 'premis') { Veu.diu(FRASES.menu.premis); pantallaPremis(); }
   if (b.dataset.accio === 'repetir' && repetir) repetir();
 });
 
@@ -89,7 +93,7 @@ function celebra(emoji, frase) {
     let fet = false;
     const tanca = () => { if (fet) return; fet = true; capa.remove(); resol(); };
     capa.addEventListener('click', tanca);
-    Veu.diu(frase).then(() => espera(900)).then(tanca);
+    Veu.diu(frase).then(() => espera(300)).then(tanca);
   });
 }
 
@@ -113,7 +117,7 @@ async function apunta(activitat, primerIntent, maxNivell) {
 }
 
 // Opcions de resposta: comú a tots els exercicis.
-function preparaOpcions(contenidor, correcta, { frase, enEncert, activitat, maxNivell }) {
+function preparaOpcions(contenidor, correcta, { frase, enEncert = [], activitat, maxNivell }) {
   const elTorn = torn;
   let primerIntent = true;
   let resolt = false;
@@ -129,8 +133,6 @@ function preparaOpcions(contenidor, correcta, { frase, enEncert, activitat, maxN
       await Veu.seqüencia([aleatori(FRASES.encert), ...enEncert]);
       if (elTorn !== torn) return;
       await apunta(activitat, primerIntent, maxNivell);
-      if (elTorn !== torn) return;
-      await espera(400);
       if (elTorn === torn) enAcabar();
     } else {
       primerIntent = false;
@@ -171,7 +173,7 @@ function pantallaInici(saluda = false) {
   repetir = () => Veu.diu(FRASES.benvinguda);
   const exemple = mostra(consonantsActives()[0] || 'M') + mostra(vocalsActives()[0] || 'A');
   app.innerHTML = `
-    ${barra({ inici: false, repetir: true })}
+    ${barra({ inici: false, repetir: true, premis: true })}
     <main class="inici">
       <button class="targeta t-lletres" data-anar="lletres">
         <span class="dibuix lletra-gran">${mostra(actives()[0] || 'A')}</span>
@@ -185,9 +187,17 @@ function pantallaInici(saluda = false) {
         <span class="dibuix">🍎</span>
         <span class="nom">Paraules</span>
       </button>
-      <button class="targeta t-premis" data-anar="premis">
-        <span class="dibuix">${D().adhesius ? ADHESIUS[D().adhesius - 1] : '🎁'}</span>
-        <span class="nom">Premis</span>
+      <button class="targeta t-numeros" data-anar="numeros">
+        <span class="dibuix lletra-gran">123</span>
+        <span class="nom">Números</span>
+      </button>
+      <button class="targeta t-compta" data-anar="compta">
+        <span class="dibuix">🐞</span>
+        <span class="nom">Compta</span>
+      </button>
+      <button class="targeta t-uneix" data-anar="uneix">
+        <span class="dibuix">${ICONA.uneix}</span>
+        <span class="nom">Uneix</span>
       </button>
     </main>
     <button class="boto-adult" id="adult" aria-label="Adults: mantén premut">
@@ -195,15 +205,14 @@ function pantallaInici(saluda = false) {
       ${ICONA.engranatge}
     </button>`;
 
-  app.querySelector('.inici').addEventListener('click', async e => {
+  app.querySelector('.inici').addEventListener('click', e => {
     const t = e.target.closest('[data-anar]');
     if (!t) return;
     const on = t.dataset.anar;
-    const elTorn = torn;
-    t.classList.add('premut');
-    await Veu.diu(FRASES.menu[on]);
-    if (elTorn !== torn) return;
-    ({ lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules, premis: pantallaPremis })[on]();
+    ({
+      lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules,
+      numeros: pantallaNumeros, compta: pantallaCompta, uneix: pantallaUneix,
+    })[on]();
   });
   preparaBotoAdult(document.getElementById('adult'));
   if (saluda) Veu.diu(FRASES.benvinguda);
@@ -240,7 +249,6 @@ function pantallaLletres() {
 
   preparaOpcions(app.querySelector('.opcions'), objectiu, {
     frase, activitat: 'lletres', maxNivell: llista.length - 1,
-    enEncert: [`${L.nom}, de ${L.exemple}.`],
   }).quanAcabi(pantallaLletres);
   Veu.diu(frase);
 }
@@ -248,7 +256,7 @@ function pantallaLletres() {
 function presentaLletra(lletra) {
   const L = LLETRES[lletra];
   const elTorn = torn;
-  const frases = [`Mira! Aquesta és la ${L.nom}.`, `${L.nom}, de ${L.exemple}.`, 'Ara toca el botó verd.'];
+  const frases = [`Aquesta és la ${L.nom}.`, `${L.nom}, de ${L.exemple}.`];
   const continua = () => {
     if (elTorn !== torn) return;
     if (!D().vistes.includes(lletra)) { D().vistes.push(lletra); Estat.desa(); }
@@ -260,14 +268,9 @@ function presentaLletra(lletra) {
     <main class="presentacio">
       <button class="lletra-presentada" data-accio="repetir">${mostra(lletra)}</button>
       <div class="exemple"><span class="dibuix">${L.dibuix}</span><span class="paraula">${mostra(L.exemple)}</span></div>
-      <button class="boto-endavant" id="endavant" aria-label="Endavant">${ICONA.endavant}</button>
     </main>`;
-  document.getElementById('endavant').addEventListener('click', continua);
-  Veu.seqüencia(frases.slice(0, 2)).then(() => {
-    if (elTorn !== torn) return;
-    document.getElementById('endavant')?.classList.add('mostra');
-    Veu.diu(frases[2]);
-  });
+  // Passa sol a l'exercici quan acaba de parlar.
+  Veu.seqüencia(frases).then(() => espera(300)).then(continua);
 }
 
 /* ---------- 2. Síl·labes ---------- */
@@ -283,7 +286,6 @@ function pantallaSillabes() {
   const v = aleatori(voc);
   const sil = c + v;
   const diuSil = sil.toLowerCase();
-  const C = LLETRES[c], V = LLETRES[v];
   const instruccio = 'Toca les dues lletres per ajuntar-les.';
   repetir = () => Veu.diu(instruccio);
 
@@ -307,10 +309,10 @@ function pantallaSillabes() {
     await Veu.diu(LLETRES[f.dataset.l].nom);
     if (elTorn !== torn || tocades.size < 2) return;
     app.querySelector('.ajunta').classList.add('junta');
-    await espera(500);
+    await espera(250);
     app.querySelector('.resultat').innerHTML = `<div class="sillaba">${mostra(sil)}</div>`;
-    await Veu.seqüencia([`${C.nom} i ${V.nom}...`, `${diuSil}!`]);
-    await espera(500);
+    await Veu.diu(`${diuSil}!`);
+    await espera(200);
     if (elTorn === torn) triaSillaba(sil, consNivell, cons, voc, nivell, cons.length - 1);
   });
   Veu.diu(instruccio);
@@ -339,7 +341,6 @@ function triaSillaba(sil, consNivell, cons, voc, nivell, maxNivell) {
     </main>`;
   preparaOpcions(app.querySelector('.opcions'), sil, {
     frase, activitat: 'sillabes', maxNivell,
-    enEncert: [`${sil.toLowerCase()}.`],
   }).quanAcabi(pantallaSillabes);
   Veu.diu(frase);
 }
@@ -378,12 +379,11 @@ function pantallaParaules() {
     </main>`;
   preparaOpcions(app.querySelector('.opcions'), objectiu.p, {
     frase, activitat: 'paraules', maxNivell,
-    enEncert: [`${objectiu.p}.`],
   }).quanAcabi(pantallaParaules);
   Veu.diu(frase);
 }
 
-/* ---------- 4. Premis ---------- */
+/* ---------- Premis ---------- */
 function pantallaPremis() {
   torn++;
   const n = D().adhesius;
@@ -416,7 +416,271 @@ function avisFaltenLletres() {
   app.innerHTML = `${barra()}<main class="avis"><p>Cal activar almenys una vocal i una consonant al mode adult.</p></main>`;
 }
 
-/* ---------- 5. Mode adult ---------- */
+/* ---------- 4. Números: escolta i toca ---------- */
+const articleNum = n => (n === 1 ? "l'u" : `el ${NUMEROS[n]}`);
+
+// Dos números diferents de n, a prop de n (entre 1 i 10).
+function distractorsNum(n, maxim = 10) {
+  const prop = barreja([n - 2, n - 1, n + 1, n + 2].filter(x => x >= 1 && x <= maxim));
+  const resta = barreja(Array.from({ length: maxim }, (_, i) => i + 1).filter(x => x !== n && !prop.includes(x)));
+  return [...prop, ...resta].slice(0, 2);
+}
+
+function pantallaNumeros() {
+  torn++;
+  const maxNivell = 7; // nivell 0: de l'1 al 3 ... nivell 7: de l'1 al 10
+  const nivell = Math.min(D().nivells.numeros, maxNivell);
+  const maxim = nivell + 3;
+  const n = Math.random() < 0.5 ? maxim : 1 + Math.floor(Math.random() * maxim);
+  const opcions = barreja([n, ...distractorsNum(n, Math.max(maxim, 3))]);
+  const frase = `Toca ${articleNum(n)}.`;
+  repetir = () => Veu.diu(frase);
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="exercici">
+      <div class="pregunta">
+        <button class="boto-escolta" data-accio="repetir" aria-label="Escolta">${ICONA.altaveu}</button>
+      </div>
+      <div class="opcions">
+        ${opcions.map(x => `<button class="opcio lletra numero" data-valor="${x}">${x}</button>`).join('')}
+      </div>
+    </main>`;
+  preparaOpcions(app.querySelector('.opcions'), String(n), {
+    frase, activitat: 'numeros', maxNivell,
+  }).quanAcabi(pantallaNumeros);
+  Veu.diu(frase);
+}
+
+/* ---------- 5. Compta ---------- */
+function pantallaCompta() {
+  torn++;
+  const maxNivell = 7; // fins a 3 ... fins a 10
+  const nivell = Math.min(D().nivells.compta, maxNivell);
+  const maxim = nivell + 3;
+  const n = Math.random() < 0.5 ? maxim : 1 + Math.floor(Math.random() * maxim);
+  const cosa = aleatori(COSES_PER_COMPTAR);
+  const opcions = barreja([n, ...distractorsNum(n)]);
+  const frase = "Quants n'hi ha?";
+  repetir = () => Veu.diu(frase);
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="exercici compta">
+      <div class="safata">
+        ${Array.from({ length: n }, () => `<button class="cosa">${cosa}</button>`).join('')}
+      </div>
+      <div class="opcions">
+        ${opcions.map(x => `<button class="opcio lletra numero" data-valor="${x}">${x}</button>`).join('')}
+      </div>
+    </main>`;
+  // Tocar les coses les compta en veu alta.
+  let comptades = 0;
+  app.querySelector('.safata').addEventListener('click', e => {
+    const c = e.target.closest('.cosa');
+    if (!c || c.classList.contains('comptada')) return;
+    c.classList.add('comptada');
+    comptades++;
+    c.dataset.n = comptades;
+    Veu.diu(NUMEROS[comptades]);
+  });
+  preparaOpcions(app.querySelector('.opcions'), String(n), {
+    frase, activitat: 'compta', maxNivell, enEncert: [`${NUMEROS[n]}!`],
+  }).quanAcabi(pantallaCompta);
+  Veu.diu(frase);
+}
+
+/* ---------- 6. Uneix els números ---------- */
+// Es creuen els segments a-b i c-d? Retorna el punt de tall o null.
+function talla(a, b, c, d) {
+  const r = { x: b.x - a.x, y: b.y - a.y };
+  const s = { x: d.x - c.x, y: d.y - c.y };
+  const den = r.x * s.y - r.y * s.x;
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / den;
+  const u = ((c.x - a.x) * r.y - (c.y - a.y) * r.x) / den;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return { x: a.x + t * r.x, y: a.y + t * r.y };
+}
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function distSegment(p, a, b) {
+  const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
+  return dist(p, { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
+}
+
+// Col·loca n punts de manera que el camí recte 1→2→…→n no es creui
+// i no passi per sobre d'altres números. Així sempre es pot fer.
+function colocaPunts(n, w, h, R) {
+  const marge = R * 1.4;
+  let millor = null;
+  for (let intent = 0; intent < 300; intent++) {
+    const punts = [];
+    let proves = 0;
+    while (punts.length < n && proves++ < 2000) {
+      const p = { x: marge + Math.random() * (w - 2 * marge), y: marge + Math.random() * (h - 2 * marge) };
+      if (punts.every(q => dist(p, q) > R * 3.4)) punts.push(p);
+    }
+    if (punts.length < n) continue;
+    // Desfà els creuaments (2-opt).
+    let canvi = true, voltes = 0;
+    while (canvi && voltes++ < 500) {
+      canvi = false;
+      for (let i = 0; i < n - 3 && !canvi; i++) {
+        for (let j = i + 2; j < n - 1; j++) {
+          if (talla(punts[i], punts[i + 1], punts[j], punts[j + 1])) {
+            const tros = punts.slice(i + 1, j + 1).reverse();
+            punts.splice(i + 1, tros.length, ...tros);
+            canvi = true;
+            break;
+          }
+        }
+      }
+    }
+    if (canvi) continue;
+    // Cap línia recta ha de passar per sobre d'un altre número.
+    const net = punts.every((p, k) => punts.every((a, i) =>
+      i === n - 1 || i === k || i + 1 === k || distSegment(p, a, punts[i + 1]) > R * 1.5));
+    millor = punts;
+    if (net) break;
+  }
+  return millor;
+}
+
+function pantallaUneix() {
+  torn++;
+  const elTorn = torn;
+  const maxNivell = UNEIX_PUNTS_PER_NIVELL.length - 1;
+  const nivell = Math.min(D().nivells.uneix, maxNivell);
+  const n = UNEIX_PUNTS_PER_NIVELL[nivell];
+  repetir = () => Veu.diu(FRASES.uneix);
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="uneix"><svg class="tauler"></svg></main>`;
+
+  const svg = app.querySelector('.tauler');
+  const { width: w, height: h } = svg.getBoundingClientRect();
+  const R = Math.max(30, Math.min(w, h) * 0.075);
+  const punts = colocaPunts(n, w, h, R);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const NS = 'http://www.w3.org/2000/svg';
+  const capaLinies = document.createElementNS(NS, 'g');
+  const capaPunts = document.createElementNS(NS, 'g');
+  svg.append(capaLinies, capaPunts);
+  const cercles = punts.map((p, i) => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'punt');
+    g.innerHTML = `<circle cx="${p.x}" cy="${p.y}" r="${R}"/><text x="${p.x}" y="${p.y}" font-size="${R * 1.15}">${i + 1}</text>`;
+    capaPunts.append(g);
+    return g;
+  });
+
+  let fets = [];      // línies acabades: llistes de punts
+  let actual = 0;     // número on som (índex)
+  let traç = null;    // línia que s'està dibuixant
+  let camí = null;
+  let primerIntent = true;
+  let bloquejat = false;
+
+  const marca = () => cercles.forEach((c, i) => {
+    c.classList.toggle('fet', i < actual);
+    c.classList.toggle('actual', i === actual);
+  });
+  marca();
+
+  const dibuixa = (pts, el) => el.setAttribute('d', 'M' + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L'));
+
+  function creua(a, b) {
+    const inici = punts[actual];
+    for (const linia of fets) {
+      for (let i = 0; i < linia.length - 1; i++) {
+        const x = talla(a, b, linia[i], linia[i + 1]);
+        if (x && dist(x, inici) > R * 0.9) return true;
+      }
+    }
+    return false;
+  }
+
+  async function tornaHi() {
+    bloquejat = true;
+    primerIntent = false;
+    traç = null;
+    svg.classList.remove('balla'); void svg.getBoundingClientRect(); svg.classList.add('balla');
+    capaLinies.querySelectorAll('path').forEach(p => p.classList.add('creuat'));
+    await Veu.diu(FRASES.creuat);
+    if (elTorn !== torn) return;
+    capaLinies.innerHTML = '';
+    fets = [];
+    actual = 0;
+    marca();
+    bloquejat = false;
+  }
+
+  async function acaba() {
+    bloquejat = true;
+    svg.classList.add('acabat');
+    So.premi();
+    await Veu.seqüencia([aleatori(FRASES.encert), FRASES.uneixFet]);
+    if (elTorn !== torn) return;
+    await apunta('uneix', primerIntent, maxNivell);
+    if (elTorn === torn) pantallaUneix();
+  }
+
+  const posicio = e => {
+    const r = svg.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  svg.addEventListener('pointerdown', e => {
+    if (bloquejat || traç) return;
+    const p = posicio(e);
+    if (dist(p, punts[actual]) > R * 1.4) {
+      // Ha tocat un altre lloc: li recordem on ha de començar.
+      const toc = punts.findIndex(q => dist(p, q) < R * 1.2);
+      if (toc >= 0) Veu.diu(`Comença per ${articleNum(actual + 1)}.`);
+      return;
+    }
+    svg.setPointerCapture(e.pointerId);
+    traç = { id: e.pointerId, pts: [punts[actual]] };
+    camí = document.createElementNS(NS, 'path');
+    camí.setAttribute('class', 'linia');
+    capaLinies.append(camí);
+  });
+
+  svg.addEventListener('pointermove', e => {
+    if (!traç || e.pointerId !== traç.id || bloquejat) return;
+    const p = posicio(e);
+    const darrer = traç.pts[traç.pts.length - 1];
+    if (dist(p, darrer) < 4) return;
+    if (creua(darrer, p)) { camí.remove(); return tornaHi(); }
+    traç.pts.push(p);
+    dibuixa(traç.pts, camí);
+    const seguent = punts[actual + 1];
+    if (distSegment(seguent, darrer, p) < R) {
+      traç.pts.push(seguent);
+      dibuixa(traç.pts, camí);
+      camí.classList.add('feta');
+      fets.push(traç.pts);
+      traç = null;
+      actual++;
+      marca();
+      So.encert();
+      Veu.diu(NUMEROS[actual + 1]);
+      if (actual === n - 1) acaba();
+    }
+  });
+
+  const deixa = e => {
+    if (!traç || e.pointerId !== traç.id) return;
+    // Ha aixecat el dit abans d'arribar: esborrem només aquest tros.
+    camí.remove();
+    traç = null;
+  };
+  svg.addEventListener('pointerup', deixa);
+  svg.addEventListener('pointercancel', deixa);
+
+  Veu.seqüencia([FRASES.uneix, `Comença per ${articleNum(1)}.`]);
+}
+
+/* ---------- Mode adult ---------- */
 function preparaBotoAdult(boto) {
   let temps = null;
   const atura = () => { clearTimeout(temps); boto.classList.remove('carregant'); };
@@ -503,6 +767,7 @@ function pantallaAdult() {
         <h3>Progrés</h3>
         <p>⭐ ${D().estrelles} estrelles · ${D().adhesius} adhesius</p>
         <p>Nivell lletres: ${n.lletres + 1} · síl·labes: ${n.sillabes + 1} · paraules: ${n.paraules + 1}</p>
+        <p>Nivell números: ${n.numeros + 1} · compta: ${n.compta + 1} · uneix: ${n.uneix + 1}</p>
         <p class="ajuda">El progrés només es guarda en aquesta tablet.</p>
         <button class="boto-text perill" id="esborra">Esborrar el progrés</button>
       </section>
@@ -536,7 +801,7 @@ function pantallaAdult() {
   document.getElementById('veu')?.addEventListener('change', e => Veu.triar(e.target.value));
   document.getElementById('velocitat').addEventListener('change', e => { aj.velocitat = Number(e.target.value); Estat.desa(); });
   document.getElementById('prova-veu').addEventListener('click', () =>
-    Veu.seqüencia(['Hola! Anem a cole.', 'Ema, de mà. Pe, de poma.', 'ma, me, mi, mo, mu.', 'On posa pilota?']));
+    Veu.seqüencia(['Hola! Anem a cole.', 'Ema, de mà. Pe, de poma.', 'ma, me, mi, mo, mu.', 'On posa pilota?', 'u, dos, tres, quatre, cinc, sis, set, vuit, nou, deu.']));
   document.getElementById('esborra').addEventListener('click', () => {
     if (confirm('Segur que vols esborrar les estrelles, els adhesius i els nivells?')) {
       Estat.reinicia();

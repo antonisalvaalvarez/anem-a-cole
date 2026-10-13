@@ -1,6 +1,6 @@
 /* Guarda l'app a la tablet perquè funcioni sense internet.
    Quan canviïs algun fitxer, puja el número de VERSIO. */
-const VERSIO = 'v1';
+const VERSIO = 'v2';
 const FITXERS = [
   './',
   'index.html',
@@ -16,7 +16,7 @@ const FITXERS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSIO).then(c => c.addAll(FITXERS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSIO).then(c => c.addAll(FITXERS.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

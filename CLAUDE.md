@@ -8,7 +8,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - **Quan es canvia qualsevol fitxer, cal pujar `VERSIO` a `sw.js`**, si no la tablet continua amb la versió vella.
 
 ## On és cada cosa
-- `js/dades.js`: lletres, paraules, adhesius, frases de la veu i lletres inicials. És el fitxer per canviar continguts.
+- `js/dades.js`: lletres, paraules, números, adhesius, frases de la veu i lletres inicials. És el fitxer per canviar continguts.
 - `js/app.js`: pantalles i exercicis. `js/veu.js`: veu i sons. `js/estat.js`: progrés guardat.
 - `css/estil.css`: disseny.
 
@@ -25,8 +25,13 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - Res de noms, escola, fotos familiars, dades personals, contrasenyes ni claus dins el codi.
 - Si mai cal guardar dades privades, preguntar-ho abans.
 
-## Fora d'abast (versió 1)
-Números, escriptura, comptes d'usuari, connexió a internet obligatòria.
+## Jocs
+- Lletres, Síl·labes, Paraules.
+- Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit de l'1 al 10 sense creuar línies; si es creuen, "Tornem-hi!", mai "has perdut").
+- Han de ser **ràpids**: frases curtes, poques esperes, passar sol a la pregunta següent.
+
+## Fora d'abast
+Escriptura, comptes d'usuari, connexió a internet obligatòria.
 
 ## Com treballem
 - Respondre en català, clar i curt, sense tecnicismes (l'usuari no és programador).

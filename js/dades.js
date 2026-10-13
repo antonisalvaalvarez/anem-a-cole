@@ -81,6 +81,15 @@ const PARAULES = [
   { p: 'xocolata', d: '🍫' },
 ];
 
+// Números de l'1 al 10: com els diu la veu.
+const NUMEROS = { 1: 'u', 2: 'dos', 3: 'tres', 4: 'quatre', 5: 'cinc', 6: 'sis', 7: 'set', 8: 'vuit', 9: 'nou', 10: 'deu' };
+
+// Dibuixos per al joc de comptar.
+const COSES_PER_COMPTAR = ['🍎', '🐞', '⭐', '🎈', '🐟', '🌸', '🚗', '🍓', '🐥', '⚽', '🦋', '🍪'];
+
+// Joc d'unir: quants números hi ha a cada nivell.
+const UNEIX_PUNTS_PER_NIVELL = [5, 7, 10];
+
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).
 const ADHESIUS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐵',
   '🐧', '🦉', '🐢', '🐬', '🦋', '🐞', '🦄', '🐲', '🦒', '🐘'];
@@ -92,9 +101,16 @@ const ENCERTS_PER_NIVELL = 3;
 // Frases de la veu.
 const FRASES = {
   benvinguda: 'Hola! Què vols fer avui?',
-  menu: { lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules', premis: 'Els meus premis' },
-  encert: ['Molt bé!', 'Fantàstic!', 'Ho has fet molt bé!', 'Genial!', 'Bravo!'],
-  error: ['Gairebé! Torna-ho a provar.', 'Prova-ho una altra vegada!', 'Tu pots! Torna-ho a provar.'],
+  menu: {
+    lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules',
+    numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números', premis: 'Els meus premis',
+  },
+  // Curtes, perquè el joc vagi ràpid.
+  encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],
+  error: ['Gairebé!', 'Torna-ho a provar!', 'Tu pots!'],
+  uneix: 'Uneix els números amb el dit, sense creuar les línies.',
+  uneixFet: 'Ho has aconseguit!',
+  creuat: "Uf, s'han creuat! Tornem-hi!",
   nivell: 'Has pujat de nivell! Ets un crack!',
   adhesiu: 'Has guanyat un adhesiu nou!',
 };

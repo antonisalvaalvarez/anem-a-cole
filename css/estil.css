@@ -122,9 +122,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
   width: 100%;
   margin: 0 auto;
 }
-@media (orientation: landscape) and (min-aspect-ratio: 3/2) {
-  .inici { grid-template-columns: repeat(4, 1fr); align-content: center; }
-  .inici .targeta { aspect-ratio: 3 / 4; }
+@media (orientation: landscape) {
+  .inici { grid-template-columns: repeat(3, 1fr); }
 }
 .targeta {
   border-radius: var(--radi);
@@ -141,7 +140,12 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .t-lletres { background: var(--coral); }
 .t-sillabes { background: var(--sol); }
 .t-paraules { background: var(--menta); }
-.t-premis { background: var(--lila); }
+.t-numeros { background: var(--lila); }
+.t-compta { background: #FF9F5A; }
+.t-uneix { background: #4AA8FF; }
+.targeta .icona-uneix { width: 1em; height: 1em; stroke-width: 2; }
+.targeta .icona-uneix circle { fill: currentColor; }
+.boto-premis { font-size: 6vmin; }
 
 .boto-adult {
   position: fixed;
@@ -233,22 +237,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .exemple { display: flex; align-items: center; gap: 3vmin; font-size: 7vmin; font-weight: 700; }
 .exemple .dibuix { font-size: 12vmin; }
 @keyframes apareix { from { transform: scale(0.3); opacity: 0; } }
-.boto-endavant {
-  width: 16vmin; height: 16vmin;
-  border-radius: 50%;
-  background: var(--verd); color: var(--blanc);
-  display: grid; place-items: center;
-  box-shadow: 0 1vmin 0 #2C8E5A;
-  opacity: 0.25;
-  transition: opacity 0.3s;
-}
-.boto-endavant.mostra { opacity: 1; animation: batec 1.6s ease-in-out infinite; }
-.boto-endavant svg { width: 55%; height: 55%; stroke-width: 3; }
 @media (orientation: landscape) {
-  .presentacio { display: grid; grid-template-columns: auto auto; grid-template-rows: 1fr auto; justify-content: center; align-content: center; column-gap: 8vmin; row-gap: 4vmin; }
-  .lletra-presentada { grid-row: 1 / 3; }
-  .exemple { align-self: end; }
-  .boto-endavant { justify-self: start; }
+  .presentacio { flex-direction: row; gap: 8vmin; }
+  .exemple { flex-direction: column; }
 }
 
 /* Síl·labes */
@@ -304,6 +295,55 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
   .lletra-presentada { font-size: 50vmin; }
 }
 
+/* Compta */
+.compta { gap: 5vmin; }
+.safata {
+  display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
+  gap: 2vmin;
+  max-width: 95vmin;
+  min-height: 30vmin;
+  background: var(--blanc);
+  border-radius: 6vmin;
+  padding: 3vmin;
+  box-shadow: var(--ombra);
+}
+.cosa { font-size: 13vmin; line-height: 1; position: relative; transition: transform 0.2s; }
+.cosa.comptada { transform: scale(0.85); }
+.cosa.comptada::after {
+  content: attr(data-n);
+  position: absolute; right: -1vmin; top: -1vmin;
+  width: 5.5vmin; height: 5.5vmin; border-radius: 50%;
+  background: var(--lila); color: var(--blanc);
+  font-size: 3.5vmin; font-weight: 800; line-height: 5.5vmin;
+  font-family: var(--lletra);
+}
+@media (orientation: landscape) {
+  .compta { flex-direction: row; gap: 7vmin; }
+  .compta .opcions { flex-direction: column; width: auto; gap: 3vmin; }
+  .compta .opcio.lletra { width: 22vmin; height: 22vmin; font-size: 13vmin; }
+}
+
+/* Uneix */
+.uneix { flex: 1; padding: 2vmin 3vmin 3vmin; display: flex; }
+.tauler {
+  flex: 1;
+  background: var(--blanc);
+  border-radius: 5vmin;
+  box-shadow: var(--ombra);
+  touch-action: none;
+}
+.tauler .linia { fill: none; stroke: var(--lila); stroke-width: 1.4vmin; stroke-linecap: round; stroke-linejoin: round; opacity: 0.6; }
+.tauler .linia.feta { opacity: 1; }
+.tauler .linia.creuat { stroke: var(--sol); }
+.tauler.acabat .linia { stroke: var(--verd); }
+.punt circle { fill: #F4EFE7; stroke: none; transition: fill 0.2s; }
+.punt text { fill: var(--tinta); font-weight: 800; text-anchor: middle; dominant-baseline: central; font-family: var(--lletra); stroke: none; pointer-events: none; }
+.punt.fet circle { fill: var(--verd); }
+.punt.fet text { fill: var(--blanc); }
+.punt.actual circle { fill: var(--sol); animation: batec-punt 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes batec-punt { 50% { transform: scale(1.15); } }
+
 /* ---------- Celebració ---------- */
 .celebracio {
   position: fixed; inset: 0;
@@ -334,7 +374,10 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
   grid-template-columns: repeat(5, 1fr);
   gap: 2.5vmin;
 }
-@media (orientation: landscape) { .album { grid-template-columns: repeat(10, 1fr); } }
+@media (orientation: landscape) {
+  .album { grid-template-columns: repeat(10, 1fr); gap: 2vmin; }
+  .album .adhesiu { width: 11vmin; height: 11vmin; font-size: 7vmin; }
+}
 .adhesiu {
   width: 14vmin; height: 14vmin;
   border-radius: 50%;
