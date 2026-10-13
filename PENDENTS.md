@@ -18,6 +18,9 @@
 ## Per provar (versió 5)
 - [ ] Laberint: si és prou difícil i si el cotxe es mou bé amb el dit.
 
+## Per provar (versió 6)
+- [ ] Futbol: si entén les 4 jugades i si arrossegar els jugadors és fàcil.
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).
@@ -28,6 +31,6 @@
 ## Idees per a més endavant
 - Més jocs de números: més gran / més petit, sumes amb dibuixos.
 - El tren dels números, uneix i descobreix un dibuix.
-- Jocs amb tema de futbol (vegeu la conversa).
+- Més jugades de futbol (desmarcar-se, xutar a porteria buida, córner).
 - Síl·labes inverses (AM, EL) i de tres lletres.
 - Frases curtes.

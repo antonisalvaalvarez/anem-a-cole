@@ -124,6 +124,9 @@ const LABERINT_NIVELLS = [
   { mida: [14, 9], numeros: 10, amagats: 0.7 },
 ];
 
+// Futbol: al primer nivell hi ha cercles que diuen on va cada jugador i l'engany és lent; després, no.
+const FUTBOL_NIVELLS = [{ cercles: true, rapid: false }, { cercles: false, rapid: true }];
+
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).
 const ADHESIUS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐵',
   '🐧', '🦉', '🐢', '🐬', '🦋', '🐞', '🦄', '🐲', '🦒', '🐘'];
@@ -138,7 +141,7 @@ const FRASES = {
   menu: {
     lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules',
     numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números',
-    globus: 'Globus', parelles: 'Parelles', laberint: 'Laberint', premis: 'Els meus premis',
+    globus: 'Globus', parelles: 'Parelles', laberint: 'Laberint', futbol: 'Futbol', premis: 'Els meus premis',
   },
   // Curtes, perquè el joc vagi ràpid.
   encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],

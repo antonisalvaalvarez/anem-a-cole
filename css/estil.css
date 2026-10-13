@@ -152,6 +152,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .t-globus { background: #F06FB0; }
 .t-parelles { background: #5BC0DE; }
 .t-laberint { background: #7BC67E; }
+.t-futbol { background: #3A9D5D; }
 .boto-premis { font-size: 6vmin; }
 
 .boto-adult {
@@ -431,6 +432,52 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .desti text, .tauler-laberint .cotxe, .tauler-laberint .meta { text-anchor: middle; dominant-baseline: central; stroke: none; pointer-events: none; }
 .desti text { fill: var(--tinta); font-weight: 800; font-family: var(--lletra); }
 .tauler-laberint .cotxe { transition: x 0.08s linear, y 0.08s linear; }
+
+/* Futbol */
+.futbol { flex: 1; position: relative; display: grid; place-items: center; padding: 1vmin 2vmin 2vmin; min-height: 0; }
+.camp { width: 100%; height: 100%; touch-action: none; }
+.camp .gespa { fill: #4CAF6A; }
+.camp .franja { fill: #46A262; }
+.camp .linies * { fill: none; stroke: rgba(255,255,255,0.85); stroke-width: 5; }
+.camp .porteria { fill: #fff; stroke: #ddd; stroke-width: 2; }
+.camp .zones * { fill: rgba(255,255,255,0.18); stroke: #FFE29A; stroke-width: 6; stroke-dasharray: 18 12; animation: batec-zona 1.4s ease-in-out infinite; }
+@keyframes batec-zona { 50% { fill: rgba(255,255,255,0.32); } }
+.camp .jugador circle { stroke: #fff; stroke-width: 5; }
+.camp .jugador text { fill: #fff; font-weight: 800; font-size: 34px; text-anchor: middle; dominant-baseline: central; stroke: none; font-family: var(--lletra); pointer-events: none; }
+.camp .blaus .jugador circle { fill: #2F6FED; }
+.camp .blaus .porter circle { fill: #1D4FB8; }
+.camp .vermells .jugador circle { fill: #E5484D; }
+.camp .vermells .porter circle { fill: #B8323A; }
+.camp .mobil, .camp .company { cursor: grab; }
+.camp .mobil circle, .camp .company circle { animation: batec-jugador 1.6s ease-in-out infinite; }
+@keyframes batec-jugador { 50% { stroke: #FFE29A; } }
+.camp .agafat circle { stroke: #FFE29A; stroke-width: 9; animation: none; }
+.camp .pilota circle { fill: #fff; stroke: #2B2D42; stroke-width: 3; }
+.camp .pilota path { fill: #2B2D42; stroke: none; }
+.boto-joga {
+  position: absolute; right: 4vmin; bottom: 4vmin;
+  width: 17vmin; height: 17vmin; border-radius: 50%;
+  background: var(--blanc); font-size: 10vmin;
+  box-shadow: var(--ombra);
+  animation: batec 1.6s ease-in-out infinite;
+}
+
+/* Futbol: treure la pilota */
+.treure { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; padding: 2vmin 4vmin 4vmin; min-height: 0; }
+.escena { width: 100%; max-width: 110vmin; flex: 1; min-height: 0; border-radius: 4vmin; box-shadow: var(--ombra); }
+.escena .cel-escena { fill: #CDEBFF; }
+.escena .terra { fill: #4CAF6A; }
+.escena .cames path { stroke: #2B2D42; stroke-width: 22; stroke-linecap: round; fill: none; }
+.escena .cos-rival rect { fill: #E5484D; }
+.escena .cos-rival text { fill: #fff; font-size: 44px; font-weight: 800; text-anchor: middle; dominant-baseline: central; font-family: var(--lletra); }
+.escena .cap { fill: #F2C7A5; }
+.escena .bracos { stroke: #F2C7A5; stroke-width: 20; stroke-linecap: round; fill: none; }
+.escena .pilota-escena circle { fill: #fff; stroke: #2B2D42; stroke-width: 4; }
+.escena .pilota-escena path { fill: #2B2D42; }
+.escena .defensor ellipse { fill: rgba(47, 111, 237, 0.75); }
+.fletxes { display: flex; gap: 10vmin; }
+.fletxes[hidden] { display: flex; visibility: hidden; }
+.fletxes button { width: 22vmin; height: 16vmin; border-radius: 4vmin; background: var(--blanc); box-shadow: var(--ombra); font-size: 10vmin; }
 
 /* ---------- Celebració ---------- */
 .celebracio {
