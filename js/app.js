@@ -1183,7 +1183,9 @@ function pantallaFutbol(forcada = null, demo = null) {
   }
   const diu = text => Veu.diu(demo ? `Mira! ${text}` : text);
   const k = { jugada, elTorn, demo, cercles, rapid, zonaJoc, mouMa, tocaMa, assenyala, centre, fet, fallada, diu };
-  ({ treure: jugadaTreure, xut: jugadaXut })[jugada]?.(k) ?? jugadaCamp(k);
+  if (jugada === 'treure') jugadaTreure(k);
+  else if (jugada === 'xut') jugadaXut(k);
+  else jugadaCamp(k);
 }
 
 /* El camp vist des de dalt (totes les jugades menys treure i xut). */
@@ -1607,21 +1609,69 @@ function jugadaCamp(k) {
 /* Treure la pilota: el contrari fa un engany amb la pilota, però el cos diu cap on va. */
 function jugadaTreure(k) {
   const { elTorn, demo, rapid, zonaJoc, mouMa, tocaMa, centre, fet, fallada, diu } = k;
+  // Grada amb públic (punts de colors).
+  const colorsPublic = ['#FF7A6B', '#FFBE3D', '#2EC4A6', '#8C7BFF', '#4AA8FF', '#FFFFFF', '#F06FB0'];
+  let public_ = '';
+  for (let fila = 0; fila < 4; fila++) {
+    for (let x = 8 + (fila % 2) * 9; x < 600; x += 18) {
+      public_ += `<circle cx="${x}" cy="${150 + fila * 22}" r="7" fill="${aleatori(colorsPublic)}"/>`;
+    }
+  }
+  // Gespa amb franges que s'eixamplen cap a baix (fa profunditat).
+  const franges = [250, 272, 298, 330, 368, 412, 462, 520];
+  let gespa = '';
+  for (let n = 0; n < franges.length - 1; n++) {
+    gespa += `<rect x="0" y="${franges[n]}" width="600" height="${franges[n + 1] - franges[n]}" fill="${n % 2 ? '#4FB06C' : '#45A262'}"/>`;
+  }
+  const cama = c => `
+    <path class="pell" d="M${c * 18},330 L${c * 25},375" stroke-width="20"/>
+    <path class="mitja" d="M${c * 25},368 L${c * 28},396" stroke-width="22"/>
+    <ellipse class="bota" cx="${c * 33}" cy="402" rx="19" ry="9"/>`;
   zonaJoc.innerHTML = `
-    <svg class="escena" viewBox="0 0 600 520">
-      <rect class="cel-escena" x="0" y="0" width="600" height="300"/>
-      <rect class="terra" x="0" y="300" width="600" height="220"/>
+    <svg class="escena driblar" viewBox="0 0 600 520">
+      <defs>
+        <linearGradient id="cel-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FD3FF"/><stop offset="1" stop-color="#E6F4FF"/></linearGradient>
+      </defs>
+      <rect x="0" y="0" width="600" height="250" fill="url(#cel-grad)"/>
+      <rect x="0" y="128" width="600" height="104" fill="#5B6785"/>
+      <g opacity="0.85">${public_}</g>
+      <rect x="0" y="228" width="600" height="22" fill="#DCE3EE"/>
+      ${gespa}
+      <path class="linia-area" d="M0,300H600"/>
       <g class="rival" transform="translate(300,0)">
-        <g class="cames"><path d="M-18,330l-22,95M18,330l22,95"/></g>
+        <ellipse class="ombra" cx="0" cy="404" rx="62" ry="12"/>
+        <g class="cames">${cama(-1)}${cama(1)}</g>
+        <path class="pantalo" d="M-44,296 L44,296 L46,334 Q24,340 4,334 L0,322 L-4,334 Q-24,340 -46,334 Z"/>
         <g class="cos-rival">
-          <rect x="-48" y="200" width="96" height="140" rx="30"/>
-          <text x="0" y="272">10</text>
-          <circle class="cap" cx="0" cy="160" r="40"/>
-          <path class="bracos" d="M-46,215l-50,70M46,215l50,70"/>
+          <path class="pell" d="M-58,226 Q-74,252 -72,280" stroke-width="16"/>
+          <path class="pell" d="M58,226 Q74,252 72,280" stroke-width="16"/>
+          <circle class="ma-rival" cx="-72" cy="284" r="10"/>
+          <circle class="ma-rival" cx="72" cy="284" r="10"/>
+          <rect class="pell-fons" x="-10" y="164" width="20" height="26" rx="6"/>
+          <path class="samarreta" d="M-38,186 Q0,196 38,186 L64,212 L52,234 L46,226 L48,300 Q0,308 -48,300 L-46,226 L-52,234 L-64,212 Z"/>
+          <path class="coll" d="M-14,187 Q0,201 14,187"/>
+          <text class="dorsal" x="0" y="252">10</text>
+          <circle class="pell-fons" cx="0" cy="140" r="34"/>
+          <path class="cabell" d="M-35,140 Q-38,98 0,100 Q38,98 35,140 Q30,120 14,118 Q0,126 -16,118 Q-30,120 -35,140 Z"/>
+          <circle class="ull" cx="-12" cy="144" r="3.6"/>
+          <circle class="ull" cx="12" cy="144" r="3.6"/>
+          <path class="boca" d="M-9,157 Q0,163 9,157"/>
         </g>
       </g>
-      <g class="pilota-escena" transform="translate(300,452)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
-      <g class="defensor" transform="translate(300,500)"><ellipse rx="70" ry="22"/></g>
+      <g class="pilota-escena" transform="translate(300,392)">
+        <circle class="pilota-fons" r="24"/>
+        <path class="pilota-taca" d="M0,-9 L8.5,-2.8 L5.3,7.3 L-5.3,7.3 L-8.5,-2.8 Z"/>
+        <path class="pilota-ratlla" d="M0,-9V-23M8.5,-2.8L21,-7M5.3,7.3L13,19M-5.3,7.3L-13,19M-8.5,-2.8L-21,-7"/>
+      </g>
+      <g class="defensor" transform="translate(300,56)">
+        <path class="pell" d="M-104,520 Q-120,470 -96,452" stroke-width="22"/>
+        <path class="pell" d="M104,520 Q120,470 96,452" stroke-width="22"/>
+        <path class="samarreta-blava" d="M-112,530 Q-112,470 -62,452 Q0,440 62,452 Q112,470 112,530 Z"/>
+        <text class="dorsal" x="0" y="505">4</text>
+        <circle class="pell-fons" cx="-40" cy="430" r="9"/>
+        <circle class="pell-fons" cx="40" cy="430" r="9"/>
+        <circle class="cabell" cx="0" cy="424" r="40"/>
+      </g>
     </svg>
     <div class="fletxes" hidden>
       <button data-costat="-1" aria-label="Esquerra">⬅️</button>
@@ -1650,15 +1700,16 @@ function jugadaTreure(k) {
     fletxes.hidden = true;
     rival.setAttribute('transform', 'translate(300,0)');
     cos.setAttribute('transform', '');
-    pil.setAttribute('transform', 'translate(300,452)');
-    def.setAttribute('transform', 'translate(300,500)');
+    pil.setAttribute('transform', 'translate(300,392)');
+    def.setAttribute('transform', 'translate(300,56)');
     await espera(400);
     const ms = rapid && !demo ? 380 : 650;
     await Promise.all([
-      anima(pil, t => `translate(${300 - costat * 110 * t},452)`, ms),
-      anima(cos, t => `rotate(${costat * angle * t} 0 340)`, ms),
+      anima(pil, t => `translate(${300 - costat * 110 * t},392) rotate(${-costat * 200 * t})`, ms),
+      anima(cos, t => `rotate(${costat * angle * t} 0 300)`, ms),
+      anima(rival, t => `translate(${300 + costat * 14 * t},0)`, ms),
     ]);
-    await anima(pil, t => `translate(${300 - costat * 110 * (1 - t)},452)`, ms);
+    await anima(pil, t => `translate(${300 - costat * 110 * (1 - t)},392) rotate(${-costat * 200 * (1 - t)})`, ms);
     if (elTorn !== torn) return;
     fletxes.hidden = false;
     ocupat = false;
@@ -1667,9 +1718,9 @@ function jugadaTreure(k) {
     ocupat = true;
     fletxes.hidden = true;
     await Promise.all([
-      anima(rival, t => `translate(${300 + costat * 170 * t},0)`, 500),
-      anima(pil, t => `translate(${300 + costat * 190 * t},452)`, 500),
-      anima(def, t => `translate(${300 + c * 170 * t},500)`, 500),
+      anima(rival, t => `translate(${300 + costat * (14 + 156 * t)},0)`, 500),
+      anima(pil, t => `translate(${300 + costat * 180 * t},${392 + 40 * t}) rotate(${costat * 360 * t})`, 500),
+      anima(def, t => `translate(${300 + c * 150 * t},56)`, 500),
     ]);
     if (elTorn !== torn) return;
     if (c === costat) return fet('Li has pres la pilota! Has mirat el cos.');

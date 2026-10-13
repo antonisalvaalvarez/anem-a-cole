@@ -502,14 +502,27 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .escena { width: 100%; max-width: 110vmin; flex: 1; min-height: 0; }
 .escena .cel-escena { fill: #CDEBFF; }
 .escena .terra { fill: #4CAF6A; }
-.escena .cames path { stroke: #2B2D42; stroke-width: 22; stroke-linecap: round; fill: none; }
-.escena .cos-rival rect { fill: #E5484D; }
-.escena .cos-rival text { fill: #fff; font-size: 44px; font-weight: 800; text-anchor: middle; dominant-baseline: central; font-family: var(--lletra); }
 .escena .cap { fill: #F2C7A5; }
-.escena .bracos { stroke: #F2C7A5; stroke-width: 20; stroke-linecap: round; fill: none; }
 .escena .pilota-escena circle { fill: #fff; stroke: #2B2D42; stroke-width: 4; }
 .escena .pilota-escena path { fill: #2B2D42; }
-.escena .defensor ellipse { fill: rgba(47, 111, 237, 0.75); }
+.escena.driblar * { stroke: none; }
+.escena.driblar .linia-area { stroke: rgba(255,255,255,0.75); stroke-width: 5; }
+.escena.driblar .pell { fill: none; stroke: #F2C7A5; stroke-linecap: round; }
+.escena.driblar .pell-fons, .escena.driblar .ma-rival { fill: #F2C7A5; }
+.escena.driblar .mitja { fill: none; stroke: #E5484D; stroke-linecap: round; }
+.escena.driblar .bota { fill: #2B2D42; }
+.escena.driblar .ombra { fill: rgba(0,0,0,0.18); }
+.escena.driblar .pantalo { fill: #FFFFFF; }
+.escena.driblar .samarreta { fill: #E5484D; }
+.escena.driblar .samarreta-blava { fill: #2F6FED; }
+.escena.driblar .coll { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; }
+.escena.driblar .dorsal { fill: #fff; font-size: 40px; font-weight: 800; text-anchor: middle; dominant-baseline: central; font-family: var(--lletra); }
+.escena.driblar .cabell { fill: #5A3A22; }
+.escena.driblar .ull { fill: #2B2D42; }
+.escena.driblar .boca { fill: none; stroke: #9A5B45; stroke-width: 3; stroke-linecap: round; }
+.escena.driblar .pilota-fons { fill: #fff; stroke: #2B2D42; stroke-width: 2.5; }
+.escena.driblar .pilota-taca { fill: #2B2D42; }
+.escena.driblar .pilota-ratlla { fill: none; stroke: #2B2D42; stroke-width: 2.5; }
 .escena.xut { touch-action: none; }
 .escena .xarxa { fill: rgba(255,255,255,0.35); stroke: none; }
 .escena .pals { fill: none; stroke: #fff; stroke-width: 14; stroke-linejoin: round; }
