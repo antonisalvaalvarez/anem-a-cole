@@ -1091,230 +1091,112 @@ function pantallaLaberint() {
   Veu.diu(frase());
 }
 
-/* ---------- 10. Futbol: jugar per les bandes, defensar junts, atacar separats ---------- */
-// El camp es dibuixa sempre de 1000 de llarg × 620 d'ample (la nostra porteria a x=0).
-// En vertical es gira perquè la nostra porteria quedi a baix.
-const CAMP = { L: 1000, A: 620 };
+/* ---------- 10. Futbol ---------- */
+// Jugades: passar per la banda, atacar separats, defensar junts, treure la pilota
+// mirant el cos, desmarcar-se, xutar on no hi ha el porter, córner assajat i passades de l'1 al 5.
+// Les primeres vegades de cada jugada, una mà fa la demostració.
+const JUGADES = {
+  bandes: { emoji: '⚽', retol: 'Passa per la banda' },
+  atac: { emoji: '↔️', retol: 'Ataquem separats' },
+  defensa: { emoji: '🤝', retol: 'Defensem junts' },
+  treure: { emoji: '👀', retol: 'Mira el cos, no la pilota' },
+  desmarcar: { emoji: '🏃', retol: "Desmarca't" },
+  xut: { emoji: '🥅', retol: 'Xuta on no hi ha el porter' },
+  corner: { emoji: '🚩', retol: 'Córner assajat' },
+  passades: { emoji: '🔢', retol: "Passa de l'1 al 5" },
+};
+const DEMOS_PER_JUGADA = 2;
+const CAMP = { L: 1000, A: 620 }; // la nostra porteria a x=0
 let darreraJugada = null;
 
-// Treure la pilota: el contrari fa un engany amb la pilota, però el cos diu cap on va.
-function jugadaTreure(nivell, maxNivell) {
-  const elTorn = torn;
-  const { rapid } = FUTBOL_NIVELLS[nivell];
-  app.innerHTML = `
-    ${barra({ repetir: true })}
-    <main class="treure">
-      <svg class="escena" viewBox="0 0 600 520">
-        <rect class="cel-escena" x="0" y="0" width="600" height="300"/>
-        <rect class="terra" x="0" y="300" width="600" height="220"/>
-        <g class="rival" transform="translate(300,0)">
-          <g class="cames"><path d="M-18,330l-22,95M18,330l22,95"/></g>
-          <g class="cos-rival">
-            <rect x="-48" y="200" width="96" height="140" rx="30"/>
-            <text x="0" y="272">10</text>
-            <circle class="cap" cx="0" cy="160" r="40"/>
-            <path class="bracos" d="M-46,215l-50,70M46,215l50,70"/>
-          </g>
-        </g>
-        <g class="pilota-escena" transform="translate(300,452)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
-        <g class="defensor" transform="translate(300,500)"><ellipse rx="70" ry="22"/></g>
-      </svg>
-      <div class="fletxes" hidden>
-        <button data-costat="-1" aria-label="Esquerra">⬅️</button>
-        <button data-costat="1" aria-label="Dreta">➡️</button>
-      </div>
-    </main>`;
-  const rival = app.querySelector('.rival');
-  const cos = app.querySelector('.cos-rival');
-  const pil = app.querySelector('.pilota-escena');
-  const def = app.querySelector('.defensor');
-  const fletxes = app.querySelector('.fletxes');
-  const costat = Math.random() < 0.5 ? -1 : 1; // cap on va de veritat
-  const angle = rapid ? 9 : 18;
-  let primerIntent = true;
-  let ocupat = true;
-
-  const anima = (el, de, a, ms) => new Promise(r => {
-    const t0 = performance.now();
-    const pas = ara => {
-      if (elTorn !== torn) return r();
-      const t = Math.min(1, (ara - t0) / ms), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      el.setAttribute('transform', a(de + (1 - de) * e));
-      t < 1 ? requestAnimationFrame(pas) : r();
-    };
-    requestAnimationFrame(pas);
-  });
-
-  async function engany() {
-    ocupat = true;
-    fletxes.hidden = true;
-    rival.setAttribute('transform', 'translate(300,0)');
-    cos.setAttribute('transform', '');
-    pil.setAttribute('transform', 'translate(300,452)');
-    def.setAttribute('transform', 'translate(300,500)');
-    await espera(400);
-    const ms = rapid ? 380 : 650;
-    // La pilota va cap a un costat (engany) i el cos s'inclina cap a l'altre.
-    await Promise.all([
-      anima(pil, 0, t => `translate(${300 - costat * 110 * t},452)`, ms),
-      anima(cos, 0, t => `rotate(${costat * angle * t} 0 340)`, ms),
-    ]);
-    await anima(pil, 0, t => `translate(${300 - costat * 110 * (1 - t)},452)`, ms);
-    if (elTorn !== torn) return;
-    fletxes.hidden = false;
-    ocupat = false;
-    Veu.diu('Cap a on anirà? Mira el cos, no la pilota.');
-  }
-
-  fletxes.addEventListener('click', async e => {
-    const b = e.target.closest('[data-costat]');
-    if (!b || ocupat) return;
-    ocupat = true;
-    fletxes.hidden = true;
-    const tria = Number(b.dataset.costat);
-    const surt = () => Promise.all([
-      anima(rival, 0, t => `translate(${300 + costat * 170 * t},0)`, 500),
-      anima(pil, 0, t => `translate(${300 + costat * 190 * t},452)`, 500),
-      anima(def, 0, t => `translate(${300 + tria * 170 * t},500)`, 500),
-    ]);
-    await surt();
-    if (elTorn !== torn) return;
-    if (tria === costat) {
-      So.premi();
-      app.querySelector('.escena').classList.add('gol');
-      await Veu.seqüencia(["Li has pres la pilota! Has mirat el cos.", felicita()]);
-      if (elTorn !== torn) return;
-      await apunta('futbol', primerIntent, maxNivell);
-      if (elTorn === torn) pantallaFutbol();
-    } else {
-      primerIntent = false;
-      await Veu.diu("T'ha enganyat amb la pilota! Mira el cos.");
-      if (elTorn === torn) engany();
-    }
-  });
-
-  repetir = () => Veu.diu('Mira el cos, no la pilota. Cap a on anirà?');
-  Veu.diu('Treu-li la pilota! Fixa\'t en el cos.').then(() => { if (elTorn === torn) engany(); });
-}
-
-// Xutar a porteria buida: tocar la porteria on no hi ha el porter.
-function jugadaXut(nivell, maxNivell) {
-  const elTorn = torn;
-  const { rapid: esMou } = FUTBOL_NIVELLS[nivell];
-  const P = { x0: 70, x1: 530, y0: 90, y1: 330 }; // pals i travesser
-  app.innerHTML = `
-    ${barra({ repetir: true })}
-    <main class="treure">
-      <svg class="escena xut" viewBox="0 0 600 520">
-        <rect class="cel-escena" x="0" y="0" width="600" height="330"/>
-        <rect class="terra" x="0" y="330" width="600" height="190"/>
-        <rect class="xarxa" x="${P.x0}" y="${P.y0}" width="${P.x1 - P.x0}" height="${P.y1 - P.y0}"/>
-        <path class="pals" d="M${P.x0},${P.y1}V${P.y0}H${P.x1}V${P.y1}"/>
-        <g class="porter-escena">
-          <path class="bracos" d="M-40,175l-48,-45M40,175l48,-45"/>
-          <path class="cames" d="M-16,265l-18,62M16,265l18,62"/>
-          <rect x="-42" y="160" width="84" height="110" rx="26"/>
-          <circle class="cap" cx="0" cy="128" r="32"/>
-        </g>
-        <g class="pilota-escena" transform="translate(300,460)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
-      </svg>
-    </main>`;
-  const escena = app.querySelector('.escena');
-  const porter = app.querySelector('.porter-escena');
-  const pil = app.querySelector('.pilota-escena');
-  let px = Math.random() < 0.5 ? 150 : 450; // on és el porter
-  let fase = 0;
-  let primerIntent = true;
-  let ocupat = false;
-  const posaPorter = () => porter.setAttribute('transform', `translate(${px},0)`);
-  posaPorter();
-
-  // Al nivell 2 el porter va d'un pal a l'altre.
-  let abans = performance.now();
-  const passeja = ara => {
-    if (elTorn !== torn) return;
-    if (esMou && !ocupat) {
-      fase += (ara - abans) / 1000 * 1.6;
-      px = 300 + Math.sin(fase) * 160;
-      posaPorter();
-    }
-    abans = ara;
-    requestAnimationFrame(passeja);
-  };
-  if (esMou) requestAnimationFrame(passeja);
-
-  const vola = (x, y, ms) => new Promise(r => {
-    const t0 = performance.now();
-    const pas = ara => {
-      if (elTorn !== torn) return r();
-      const t = Math.min(1, (ara - t0) / ms);
-      const cx = 300 + (x - 300) * t, cy = 460 + (y - 460) * t, s = 1 - 0.45 * t;
-      pil.setAttribute('transform', `translate(${cx},${cy}) scale(${s})`);
-      t < 1 ? requestAnimationFrame(pas) : r();
-    };
-    requestAnimationFrame(pas);
-  });
-
-  const aEscena = e => {
-    const p = escena.createSVGPoint();
-    p.x = e.clientX; p.y = e.clientY;
-    return p.matrixTransform(escena.getScreenCTM().inverse());
-  };
-
-  escena.addEventListener('pointerdown', async e => {
-    if (ocupat) return;
-    const p = aEscena(e);
-    if (p.x < P.x0 || p.x > P.x1 || p.y < P.y0 || p.y > P.y1) {
-      if (p.y < 400) Veu.diu('Toca dins la porteria!');
-      return;
-    }
-    ocupat = true;
-    So.encert();
-    await vola(p.x, p.y, 420);
-    if (elTorn !== torn) return;
-    // El porter hi arriba si la pilota va a prop seu.
-    if (Math.abs(p.x - px) < 115) {
-      primerIntent = false;
-      pil.setAttribute('transform', `translate(${px},${200}) scale(0.55)`);
-      await Veu.diu("El porter l'ha aturada! Xuta on no hi ha el porter.");
-      if (elTorn !== torn) return;
-      pil.setAttribute('transform', 'translate(300,460)');
-      ocupat = false;
-      return;
-    }
-    escena.classList.add('gol');
-    So.premi();
-    await Veu.seqüencia(['Gol! On no hi ha el porter!', felicita()]);
-    if (elTorn !== torn) return;
-    await apunta('futbol', primerIntent, maxNivell);
-    if (elTorn === torn) pantallaFutbol();
-  });
-
-  const frase = esMou ? 'El porter es mou. Xuta quan hi hagi un forat!' : 'Xuta a porteria! Toca on no hi ha el porter.';
-  repetir = () => Veu.diu(frase);
-  Veu.diu(frase);
-}
-
-function pantallaFutbol() {
+function pantallaFutbol(forcada = null, demo = null) {
   torn++;
   const elTorn = torn;
   const maxNivell = FUTBOL_NIVELLS.length - 1;
   const nivell = Math.min(D().nivells.futbol, maxNivell);
-  const { cercles } = FUTBOL_NIVELLS[nivell];
-  const jugada = aleatori(['bandes', 'atac', 'defensa', 'treure', 'desmarcar', 'xut'].filter(j => j !== darreraJugada));
+  const jugada = forcada || aleatori(Object.keys(JUGADES).filter(j => j !== darreraJugada));
   darreraJugada = jugada;
-  if (jugada === 'treure') return jugadaTreure(nivell, maxNivell);
-  if (jugada === 'xut') return jugadaXut(nivell, maxNivell);
+  D().demos = D().demos || {};
+  const vistes = D().demos[jugada] || 0;
+  if (demo === null) demo = vistes < DEMOS_PER_JUGADA;
+  if (demo) { D().demos[jugada] = vistes + 1; Estat.desa(); }
+  const { cercles: ambCercles, rapid } = FUTBOL_NIVELLS[nivell];
+  const cercles = demo || ambCercles;
+  const J = JUGADES[jugada];
 
-  app.innerHTML = `${barra({ repetir: true })}<main class="futbol"><svg class="camp"></svg><button class="boto-joga" hidden aria-label="Juga">⚽</button></main>`;
-  const svg = app.querySelector('.camp');
-  const boto = app.querySelector('.boto-joga');
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="futbol">
+      <div class="retol">
+        <span class="retol-emoji">${J.emoji}</span><b>${J.retol}</b>
+        ${demo ? '<span class="etiqueta">Mira com es fa</span>' : '<button class="boto-mira" aria-label="Mira com es fa">👀 Mira</button>'}
+      </div>
+      <div class="zona-joc"></div>
+      <div class="ma" hidden>👆</div>
+      <div class="indicador" hidden>👇</div>
+    </main>`;
+  const main = app.querySelector('.futbol');
+  const zonaJoc = app.querySelector('.zona-joc');
+  const ma = app.querySelector('.ma');
+  const indicador = app.querySelector('.indicador');
+  app.querySelector('.boto-mira')?.addEventListener('click', () => pantallaFutbol(jugada, true));
+
+  // La mà de la demostració i la fletxa d'ajuda (en coordenades de pantalla).
+  const relatiu = p => { const r = main.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; };
+  let maPos = null;
+  const posaMa = p => { const q = relatiu(p); ma.hidden = false; ma.style.transform = `translate(${q.x}px, ${q.y}px)`; maPos = p; };
+  const mouMa = (p, ms = 600) => new Promise(r => {
+    const de = maPos || { x: p.x, y: p.y + 120 }, t0 = performance.now();
+    const pas = ara => {
+      if (elTorn !== torn) return r();
+      const t = Math.min(1, (ara - t0) / ms), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      posaMa({ x: de.x + (p.x - de.x) * e, y: de.y + (p.y - de.y) * e });
+      t < 1 ? requestAnimationFrame(pas) : r();
+    };
+    requestAnimationFrame(pas);
+  });
+  const tocaMa = async () => { ma.classList.remove('toc'); void ma.offsetWidth; ma.classList.add('toc'); await espera(350); };
+  const assenyala = p => {
+    if (!p) { indicador.hidden = true; return; }
+    const q = relatiu(p);
+    indicador.hidden = false;
+    indicador.style.transform = `translate(${q.x}px, ${q.y}px)`;
+  };
+  const centre = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+
+  let primerIntent = true;
+  const fallada = () => { primerIntent = false; };
+  // S'ha fet bé la jugada.
+  async function fet(frase) {
+    ma.hidden = true;
+    assenyala(null);
+    So.premi();
+    if (demo) {
+      await Veu.seqüencia([frase, 'Ara tu!']);
+      if (elTorn === torn) pantallaFutbol(jugada, false);
+      return;
+    }
+    await Veu.seqüencia([frase, felicita()]);
+    if (elTorn !== torn) return;
+    await apunta('futbol', primerIntent, maxNivell);
+    if (elTorn === torn) pantallaFutbol();
+  }
+  const diu = text => Veu.diu(demo ? `Mira! ${text}` : text);
+  const k = { jugada, elTorn, demo, cercles, rapid, zonaJoc, mouMa, tocaMa, assenyala, centre, fet, fallada, diu };
+  ({ treure: jugadaTreure, xut: jugadaXut })[jugada]?.(k) ?? jugadaCamp(k);
+}
+
+/* El camp vist des de dalt (totes les jugades menys treure i xut). */
+function jugadaCamp(k) {
+  const { jugada, elTorn, demo, cercles, zonaJoc, mouMa, tocaMa, assenyala, centre, fet, fallada, diu } = k;
+  const { L, A } = CAMP;
+  zonaJoc.innerHTML = `<svg class="camp"></svg><button class="boto-joga" hidden aria-label="Juga">⚽</button>`;
+  const svg = zonaJoc.querySelector('.camp');
+  const boto = zonaJoc.querySelector('.boto-joga');
   const caixa = svg.getBoundingClientRect();
   const vertical = caixa.height > caixa.width;
-  const { L, A } = CAMP;
   svg.setAttribute('viewBox', vertical ? `-24 -24 ${A + 48} ${L + 48}` : `-24 -24 ${L + 48} ${A + 48}`);
-  const gira = vertical ? ` transform="rotate(90)"` : ''; // perquè els números no surtin de costat
-
+  const gira = vertical ? ' transform="rotate(90)"' : '';
   svg.innerHTML = `
     <g class="mon" ${vertical ? `transform="translate(0,${L}) rotate(-90)"` : ''}>
       <rect class="gespa" x="0" y="0" width="${L}" height="${A}" rx="14"/>
@@ -1326,8 +1208,8 @@ function pantallaFutbol() {
         <rect x="0" y="${A / 2 - 150}" width="150" height="300"/>
         <rect x="${L - 150}" y="${A / 2 - 150}" width="150" height="300"/>
       </g>
-      <rect class="porteria nostra" x="-18" y="${A / 2 - 60}" width="18" height="120"/>
-      <rect class="porteria seva" x="${L}" y="${A / 2 - 60}" width="18" height="120"/>
+      <rect class="porteria" x="-18" y="${A / 2 - 60}" width="18" height="120"/>
+      <rect class="porteria" x="${L}" y="${A / 2 - 60}" width="18" height="120"/>
       <g class="zones"></g>
       <g class="vermells"></g>
       <g class="blaus"></g>
@@ -1335,7 +1217,15 @@ function pantallaFutbol() {
     </g>`;
   const mon = svg.querySelector('.mon');
   const capaZones = svg.querySelector('.zones');
+  const aPantalla = (x, y) => { const m = mon.getScreenCTM(); return { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f }; };
+  const aMon = e => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(mon.getScreenCTM().inverse()); };
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
+  let seguint = null; // jugador que la mà arrossega a la demostració
+  const posa = j => {
+    j.g.setAttribute('transform', `translate(${j.x},${j.y})`);
+    if (j === seguint) mouMa(aPantalla(j.x, j.y), 0);
+  };
   const fesJugador = (capa, classe, x, y, num) => {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', `jugador ${classe}`);
@@ -1345,9 +1235,7 @@ function pantallaFutbol() {
     posa(j);
     return j;
   };
-  const posa = j => j.g.setAttribute('transform', `translate(${j.x},${j.y})`);
   const pilota = { g: svg.querySelector('.pilota'), x: 0, y: 0 };
-  // Mou un jugador o la pilota fins a un punt, amb animació.
   const mou = (obj, x, y, ms = 600) => new Promise(resol => {
     const x0 = obj.x, y0 = obj.y, t0 = performance.now();
     const pas = ara => {
@@ -1359,207 +1247,44 @@ function pantallaFutbol() {
     };
     requestAnimationFrame(pas);
   });
-
+  // A la demostració: la mà agafa un jugador i el porta a un lloc.
+  const demoArrossega = async (j, x, y) => {
+    await mouMa(aPantalla(j.x, j.y), 500);
+    seguint = j;
+    j.g.classList.add('agafat');
+    await mou(j, x, y, 800);
+    j.g.classList.remove('agafat');
+    seguint = null;
+    await espera(150);
+  };
+  const demoToca = async j => { await mouMa(aPantalla(j.x, j.y), 600); await tocaMa(); };
+  const assenyalaJugador = j => assenyala(j ? aPantalla(j.x, j.y) : null);
+  const cercle = (z, r = 75) => `<circle cx="${z.x}" cy="${z.y}" r="${r}"/>`;
   let acabat = false;
-  let primerIntent = true;
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-
+  // A prop de la porteria, la imatge canvia: xut de cara, com un penal.
   async function gol(frase) {
     acabat = true;
     boto.hidden = true;
-    await mou(pilota, L + 10, A / 2 + (Math.random() - 0.5) * 60, 450);
-    svg.classList.add('gol');
-    So.premi();
-    await Veu.seqüencia([frase, felicita()]);
+    assenyala(null);
+    await espera(300);
     if (elTorn !== torn) return;
-    await apunta('futbol', primerIntent, maxNivell);
-    if (elTorn === torn) pantallaFutbol();
+    await xutFinal(k);
+    if (elTorn === torn) fet(frase);
   }
 
-  // Porter de cada equip.
-  fesJugador('.blaus', 'porter', 40, A / 2, 1);
-  fesJugador('.vermells', 'porter', L - 40, A / 2, 1);
-
-  if (jugada === 'bandes') {
-    const passador = fesJugador('.blaus', '', 460, A / 2, 8);
-    const esquerra = fesJugador('.blaus', 'company', 640, 70, 7);
-    const dreta = fesJugador('.blaus', 'company', 640, A - 70, 11);
-    const davanter = fesJugador('.blaus', 'company', 720, A / 2, 9);
-    [[600, A / 2 - 70], [600, A / 2 + 70], [690, A / 2 - 110], [690, A / 2 + 110], [780, A / 2]].forEach(([x, y], i) => fesJugador('.vermells', '', x, y, i + 2));
-    Object.assign(pilota, { x: passador.x + 40, y: passador.y }); posa(pilota);
-    const frase = 'Pel mig hi ha molta gent. A qui passes la pilota? Toca un company.';
-    repetir = () => Veu.diu(frase);
-    let ocupat = false;
-    svg.querySelectorAll('.company').forEach(g => g.addEventListener('pointerdown', async () => {
-      if (ocupat || acabat) return;
-      ocupat = true;
-      const j = [esquerra, dreta, davanter].find(j => j.g === g);
-      if (j === davanter) {
-        primerIntent = false;
-        await mou(pilota, 600, A / 2, 500); // un vermell la intercepta
-        await Veu.diu("Uf, pel mig ens la prenen! Prova per la banda.");
-        await mou(pilota, passador.x + 40, passador.y, 400);
-        ocupat = false;
-        return;
-      }
-      await mou(pilota, j.x, j.y, 550);
-      const yBanda = j === esquerra ? 90 : A - 90;
-      await Promise.all([mou(j, 880, yBanda, 900), mou(pilota, 900, yBanda, 900), mou(davanter, 860, A / 2, 900)]);
-      await mou(pilota, davanter.x + 20, davanter.y, 450);
-      gol('Gol! Per la banda hi ha més espai!');
-    }));
-    Veu.diu(frase);
-    return;
-  }
-
-  if (jugada === 'desmarcar') {
-    // Distància d'un punt a la línia de passada.
-    const aLinia = (p, a, b) => {
-      const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
-      const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
-      return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
-    };
-    const company = fesJugador('.blaus', '', 380, A / 2, 8);
-    const jo = fesJugador('.blaus', 'mobil jo', 660, A / 2, 9);
-    const vermells = [[600, A / 2], [720, A / 2 + 50], [520, 120], [520, A - 120]].map(([x, y], i) => fesJugador('.vermells', '', x, y, [5, 4, 6, 3][i]));
-    Object.assign(pilota, { x: company.x + 40, y: company.y }); posa(pilota);
-    const zona = Math.random() < 0.5 ? { x: 720, y: 110 } : { x: 720, y: A - 110 };
-    if (cercles) capaZones.innerHTML = `<circle cx="${zona.x}" cy="${zona.y}" r="75"/>`;
-    const lliure = () => dist(jo, company) > 150 && vermells.every(v => aLinia(v, pilota, jo) > 55 && dist(v, jo) > 110);
-    const frase = cercles
-      ? "El teu company té la pilota, però et marquen. Desmarca't! Porta el jugador de l'anell groc al cercle."
-      : "El teu company té la pilota, però et marquen. Desmarca't! Busca un lloc on no et tapi ningú.";
-    repetir = () => Veu.diu(frase);
-    const aMon = e => {
-      const p = svg.createSVGPoint();
-      p.x = e.clientX; p.y = e.clientY;
-      return p.matrixTransform(mon.getScreenCTM().inverse());
-    };
-    let agafat = null;
-    svg.addEventListener('pointerdown', e => {
-      if (acabat || dist(jo, aMon(e)) > 70) return;
-      svg.setPointerCapture(e.pointerId);
-      agafat = e.pointerId;
-      jo.g.classList.add('agafat');
-    });
-    svg.addEventListener('pointermove', e => {
-      if (agafat !== e.pointerId) return;
-      const p = aMon(e);
-      jo.x = Math.max(30, Math.min(L - 30, p.x));
-      jo.y = Math.max(30, Math.min(A - 30, p.y));
-      posa(jo);
-    });
-    const deixa = async e => {
-      if (agafat !== e.pointerId) return;
-      agafat = null;
-      jo.g.classList.remove('agafat');
-      const bo = cercles ? dist(jo, zona) <= 75 && lliure() : lliure();
-      if (!bo) {
-        if (!cercles || dist(jo, { x: 660, y: A / 2 }) > 60) {
-          primerIntent = false;
-          Veu.diu(cercles ? 'Porta-ho al cercle!' : 'Encara et tapen. Busca un lloc on no hi hagi ningú entre tu i la pilota.');
-        }
-        return;
-      }
-      acabat = true;
-      await mou(pilota, jo.x, jo.y, 550);
-      await Promise.all([mou(jo, 880, A / 2 + (jo.y < A / 2 ? -60 : 60), 700), mou(pilota, 900, A / 2 + (jo.y < A / 2 ? -60 : 60), 700)]);
-      gol("Gol! Desmarcat, et poden passar la pilota!");
-    };
-    svg.addEventListener('pointerup', deixa);
-    svg.addEventListener('pointercancel', deixa);
-    Veu.diu(frase);
-    return;
-  }
-
-  // Atac i defensa: cal arrossegar els jugadors blaus.
-  const atac = jugada === 'atac';
-  const inicials = atac
-    ? [[330, A / 2 - 60], [370, A / 2 + 30], [300, A / 2 + 80], [400, A / 2 - 10]]
-    : [[480, 90], [620, A - 100], [720, 230], [700, A / 2 + 120]];
-  const blaus = inicials.map(([x, y], i) => fesJugador('.blaus', 'mobil', x, y, [4, 6, 7, 9][i]));
-  if (atac) {
-    [[620, A / 2 - 40], [700, A / 2 + 50], [780, A / 2 - 10]].forEach(([x, y], i) => fesJugador('.vermells', '', x, y, i + 2));
-    Object.assign(pilota, { x: blaus[3].x + 40, y: blaus[3].y });
-  } else {
-    [[520, A / 2], [600, 140], [600, A - 140]].forEach(([x, y], i) => fesJugador('.vermells', 'ataca', x, y, [10, 11, 5][i]));
-    Object.assign(pilota, { x: 480, y: A / 2 });
-  }
-  posa(pilota);
-  // Els cercles (només al primer nivell).
-  const zones = atac
-    ? [{ x: 620, y: 80 }, { x: 620, y: A - 80 }, { x: 470, y: A / 2 }, { x: 800, y: A / 2 }]
-    : [{ x: 220, y: A / 2, rx: 140, ry: 190 }];
-  if (cercles) {
-    capaZones.innerHTML = zones.map(z => z.rx
-      ? `<ellipse cx="${z.x}" cy="${z.y}" rx="${z.rx}" ry="${z.ry}"/>`
-      : `<circle cx="${z.x}" cy="${z.y}" r="75"/>`).join('');
-  }
-  const frase = atac
-    ? (cercles ? 'Ataquem! Quan ataquem, ens separem. Porta cada jugador blau a un cercle.' : 'Ataquem! Quan ataquem, ens separem. Col·loca els blaus i toca la pilota.')
-    : (cercles ? 'Defensem! Quan defensem, anem junts. Porta els jugadors blaus al cercle.' : 'Defensem! Quan defensem, anem junts. Col·loca els blaus i toca la pilota.');
-  repetir = () => Veu.diu(frase);
-  if (!cercles) boto.hidden = false;
-
-  const dinsZona = (j, z) => z.rx ? ((j.x - z.x) / z.rx) ** 2 + ((j.y - z.y) / z.ry) ** 2 <= 1 : dist(j, z) <= 75;
-  const benColocats = () => {
-    if (cercles) {
-      if (!atac) return blaus.every(j => dinsZona(j, zones[0]));
-      return zones.every(z => blaus.some(j => dinsZona(j, z)));
-    }
-    if (atac) {
-      const separats = blaus.every((a, i) => blaus.every((b, k) => k === i || dist(a, b) > 170));
-      return separats && blaus.some(j => j.y < 150) && blaus.some(j => j.y > A - 150) && blaus.some(j => j.x > 650);
-    }
-    const cx = blaus.reduce((s, j) => s + j.x, 0) / blaus.length, cy = blaus.reduce((s, j) => s + j.y, 0) / blaus.length;
-    return cx < 400 && blaus.every(j => dist(j, { x: cx, y: cy }) < 160);
-  };
-
-  async function juga() {
-    if (acabat) return;
-    if (atac) {
-      acabat = true;
-      const banda = blaus.reduce((m, j) => (Math.abs(j.y - A / 2) > Math.abs(m.y - A / 2) ? j : m));
-      const davanter = blaus.reduce((m, j) => (j !== banda && j.x > m.x ? j : m), blaus.find(j => j !== banda));
-      await mou(pilota, banda.x, banda.y, 550);
-      await Promise.all([mou(banda, 880, banda.y < A / 2 ? 90 : A - 90, 800), mou(pilota, 900, banda.y < A / 2 ? 90 : A - 90, 800), mou(davanter, 860, A / 2, 800)]);
-      await mou(pilota, davanter.x + 20, davanter.y, 400);
-      acabat = false;
-      return gol('Gol! Separats tenim més espai!');
-    }
-    acabat = true;
-    // El vermell intenta passar i un blau li pren la pilota.
-    const lladre = blaus.reduce((m, j) => (j.x > m.x ? m : j));
-    await mou(pilota, lladre.x + 30, lladre.y, 700);
-    So.encert();
-    acabat = false;
-    gol('Molt bé! Junts, no ens passen!');
-  }
-
-  async function revisa(manual) {
-    if (acabat) return;
-    if (benColocats()) return juga();
-    if (!manual) return;
-    primerIntent = false;
-    Veu.diu(atac ? 'Encara estan massa junts. Separa\'ls: un a cada banda i un a davant!' : 'Encara estan massa separats. Ajunta\'ls a prop de la porteria!');
-  }
-  boto.addEventListener('click', () => revisa(true));
-
-  // Arrossegar
-  const aMon = e => {
-    const p = svg.createSVGPoint();
-    p.x = e.clientX; p.y = e.clientY;
-    return p.matrixTransform(mon.getScreenCTM().inverse());
-  };
+  // Arrossegar jugadors amb el dit (no a la demostració).
+  const arrossegables = [];
+  let quanDeixa = () => {};
   let agafat = null;
   svg.addEventListener('pointerdown', e => {
-    if (acabat) return;
+    if (demo || acabat || !arrossegables.length) return;
     const p = aMon(e);
-    const j = blaus.reduce((m, j) => (dist(j, p) < dist(m, p) ? j : m));
+    const j = arrossegables.reduce((m, j) => (dist(j, p) < dist(m, p) ? j : m));
     if (dist(j, p) > 70) return;
     svg.setPointerCapture(e.pointerId);
     agafat = { j, id: e.pointerId };
     j.g.classList.add('agafat');
+    assenyala(null);
   });
   svg.addEventListener('pointermove', e => {
     if (!agafat || agafat.id !== e.pointerId) return;
@@ -1570,13 +1295,535 @@ function pantallaFutbol() {
   });
   const deixa = e => {
     if (!agafat || agafat.id !== e.pointerId) return;
-    agafat.j.g.classList.remove('agafat');
+    const j = agafat.j;
+    j.g.classList.remove('agafat');
     agafat = null;
-    if (cercles) revisa(false);
+    quanDeixa(j);
   };
   svg.addEventListener('pointerup', deixa);
   svg.addEventListener('pointercancel', deixa);
-  Veu.diu(frase);
+
+  // Tocar un company per passar-li la pilota.
+  const tocables = [];
+  let quanToca = () => {};
+  svg.addEventListener('pointerdown', e => {
+    if (demo || acabat || !tocables.length) return;
+    const p = aMon(e);
+    const j = tocables.find(j => dist(j, p) < 60);
+    if (j) quanToca(j);
+  });
+
+  // Porters.
+  fesJugador('.blaus', 'porter', 40, A / 2, 1);
+  fesJugador('.vermells', 'porter', L - 40, A / 2, 1);
+
+  /* --- Per la banda --- */
+  if (jugada === 'bandes') {
+    const passador = fesJugador('.blaus', '', 460, A / 2, 8);
+    const esquerra = fesJugador('.blaus', 'company', 640, 70, 7);
+    const dreta = fesJugador('.blaus', 'company', 640, A - 70, 11);
+    const davanter = fesJugador('.blaus', 'company', 720, A / 2, 9);
+    [[600, A / 2 - 70], [600, A / 2 + 70], [690, A / 2 - 110], [690, A / 2 + 110], [780, A / 2]].forEach(([x, y], i) => fesJugador('.vermells', '', x, y, i + 2));
+    Object.assign(pilota, { x: passador.x + 40, y: passador.y }); posa(pilota);
+    tocables.push(esquerra, dreta, davanter);
+    const frase = 'Pel mig hi ha molta gent. Passa la pilota per la banda: toca un company.';
+    repetir = () => Veu.diu(frase);
+    let ocupat = false;
+    quanToca = async j => {
+      if (ocupat) return;
+      ocupat = true;
+      if (j === davanter) {
+        fallada();
+        await mou(pilota, 600, A / 2, 500);
+        await Veu.diu('Uf, pel mig ens la prenen! Prova per la banda.');
+        await mou(pilota, passador.x + 40, passador.y, 400);
+        ocupat = false;
+        return;
+      }
+      await mou(pilota, j.x, j.y, 550);
+      const yBanda = j === esquerra ? 90 : A - 90;
+      await Promise.all([mou(j, 880, yBanda, 900), mou(pilota, 900, yBanda, 900), mou(davanter, 860, A / 2, 900)]);
+      await mou(pilota, davanter.x + 20, davanter.y, 450);
+      gol('Gol! Per la banda hi ha més espai!');
+    };
+    if (demo) diu(frase).then(async () => { await demoToca(esquerra); if (elTorn === torn) quanToca(esquerra); });
+    else Veu.diu(frase);
+    return;
+  }
+
+  /* --- Desmarcar-se --- */
+  if (jugada === 'desmarcar') {
+    const aLinia = (p, a, b) => {
+      const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+      const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
+      return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+    };
+    const company = fesJugador('.blaus', '', 380, A / 2, 8);
+    const jo = fesJugador('.blaus', 'mobil jo', 660, A / 2, 9);
+    const vermells = [[600, A / 2], [720, A / 2 + 50], [520, 120], [520, A - 120]].map(([x, y], i) => fesJugador('.vermells', '', x, y, [5, 4, 6, 3][i]));
+    Object.assign(pilota, { x: company.x + 40, y: company.y }); posa(pilota);
+    const zona = Math.random() < 0.5 ? { x: 720, y: 110 } : { x: 720, y: A - 110 };
+    if (cercles) capaZones.innerHTML = cercle(zona);
+    const lliure = () => dist(jo, company) > 150 && vermells.every(v => aLinia(v, pilota, jo) > 55 && dist(v, jo) > 110);
+    const frase = cercles
+      ? "El teu company té la pilota, però et marquen. Desmarca't: porta el jugador de l'anell groc al cercle."
+      : "El teu company té la pilota, però et marquen. Desmarca't: busca un lloc on no et tapi ningú.";
+    repetir = () => Veu.diu(frase);
+    const prova = async () => {
+      const bo = cercles ? dist(jo, zona) <= 75 && lliure() : lliure();
+      if (!bo) {
+        if (dist(jo, { x: 660, y: A / 2 }) > 60) {
+          fallada();
+          Veu.diu(cercles ? 'Porta-ho al cercle!' : 'Encara et tapen. Busca un lloc on no hi hagi ningú entre tu i la pilota.');
+        }
+        if (cercles) assenyalaJugador(jo);
+        return;
+      }
+      acabat = true;
+      await mou(pilota, jo.x, jo.y, 550);
+      const yFi = A / 2 + (jo.y < A / 2 ? -60 : 60);
+      await Promise.all([mou(jo, 880, yFi, 700), mou(pilota, 900, yFi, 700)]);
+      gol('Gol! Desmarcat, et poden passar la pilota!');
+    };
+    arrossegables.push(jo);
+    quanDeixa = prova;
+    if (demo) diu(frase).then(async () => { await demoArrossega(jo, zona.x, zona.y); if (elTorn === torn) prova(); });
+    else { Veu.diu(frase); if (cercles) assenyalaJugador(jo); }
+    return;
+  }
+
+  /* --- Córner assajat --- */
+  if (jugada === 'corner') {
+    const yC = Math.random() < 0.5 ? 1 : -1; // córner per dalt o per baix
+    const Y = y => (yC === 1 ? y : A - y);
+    const llançador = fesJugador('.blaus', '', L - 18, Y(18), 10);
+    const set = fesJugador('.blaus', 'mobil', 780, Y(200), 7);
+    const nou = fesJugador('.blaus', 'company', 800, Y(380), 9);
+    const marcador = fesJugador('.vermells', '', 850, Y(290), 4);
+    fesJugador('.vermells', '', 900, Y(470), 5);
+    Object.assign(pilota, { x: llançador.x - 26, y: llançador.y + yC * 26 }); posa(pilota);
+    const primerPal = { x: 930, y: Y(220) };
+    if (cercles) capaZones.innerHTML = cercle(primerPal);
+    let pas = 1;
+    const frase1 = "Córner assajat! Primer, el set corre al primer pal per endur-se el defensa.";
+    const frase2 = "El defensa l'ha seguit! Ara, passa la pilota al que està sol.";
+    repetir = () => Veu.diu(pas === 1 ? frase1 : frase2);
+    arrossegables.push(set);
+    const alPrimerPal = () => (cercles ? dist(set, primerPal) <= 80 : set.x > 880 && Math.abs(set.y - primerPal.y) < 120);
+    quanDeixa = async () => {
+      if (pas !== 1) return;
+      if (!alPrimerPal()) {
+        if (dist(set, { x: 780, y: Y(200) }) > 60) { fallada(); Veu.diu('Porta el set a prop del primer pal, al costat de la porteria.'); }
+        if (cercles) assenyalaJugador(set);
+        return;
+      }
+      pas = 2;
+      arrossegables.length = 0;
+      capaZones.innerHTML = '';
+      await mou(marcador, set.x - 45, set.y + yC * 35, 600); // el defensa el segueix
+      tocables.push(set, nou);
+      if (!demo) Veu.diu(frase2);
+    };
+    let ocupat = false;
+    quanToca = async j => {
+      if (pas !== 2 || ocupat) return;
+      ocupat = true;
+      if (j === set) {
+        fallada();
+        await Veu.diu("El set està marcat! Passa-la al nou, que està sol.");
+        ocupat = false;
+        return;
+      }
+      await mou(nou, 880, A / 2 + yC * -10, 500);
+      await mou(pilota, nou.x, nou.y, 650);
+      gol('Gol de córner! Jugada assajada!');
+    };
+    if (demo) {
+      diu(frase1).then(async () => {
+        await demoArrossega(set, primerPal.x, primerPal.y);
+        if (elTorn !== torn) return;
+        await quanDeixa(set);
+        await Veu.diu(`Mira! ${frase2}`);
+        await demoToca(nou);
+        if (elTorn === torn) { pas = 2; quanToca(nou); }
+      });
+    } else { Veu.diu(frase1); if (cercles) assenyalaJugador(set); }
+    return;
+  }
+
+  /* --- Passades de l'1 al 5 --- */
+  if (jugada === 'passades') {
+    const aLinia = (p, a, b) => {
+      const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+      const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
+      return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+    };
+    // Aquí només compten els números blaus de l'1 al 5: sense porter blau i contraris sense número.
+    svg.querySelector('.blaus .porter').remove();
+    const u = fesJugador('.blaus', '', 140, A / 2, 1);
+    const inicials = [[260, A / 2 - 70], [280, A / 2 + 60], [330, A / 2 - 10], [230, A / 2 + 140]];
+    const companys = inicials.map(([x, y], i) => fesJugador('.blaus', 'mobil', x, y, i + 2));
+    const vermells = [[480, A / 2 - 40], [520, A / 2 + 70], [640, A / 2 - 10], [700, A / 2 + 110], [760, A / 2 - 100]]
+      .map(([x, y]) => fesJugador('.vermells', '', x, y, ''));
+    Object.assign(pilota, { x: u.x + 40, y: u.y }); posa(pilota);
+    const dalt = Math.random() < 0.5;
+    const ruta = [[330, 120], [560, 70], [760, 95], [870, 230]].map(([x, y]) => ({ x, y: dalt ? y : A - y }));
+    if (cercles) capaZones.innerHTML = ruta.map((z, i) => `${cercle(z, 62)}<text class="num-zona" x="${z.x}" y="${z.y}"${gira ? ` transform="rotate(90 ${z.x} ${z.y})"` : ''}>${i + 2}</text>`).join('');
+    boto.hidden = false;
+    const frase = cercles
+      ? "L'u té la pilota. Porta cada jugador al cercle del seu número i toca la pilota. Passarem en ordre fins al cinc!"
+      : "L'u té la pilota. Col·loca del dos al cinc per passar en ordre, per la banda, i toca la pilota.";
+    repetir = () => Veu.diu(frase);
+    arrossegables.push(...companys);
+    const següent = () => companys.find((j, i) => dist(j, ruta[i]) > 62);
+    quanDeixa = () => { if (cercles) assenyalaJugador(següent()); };
+    let ocupat = false;
+    async function passa() {
+      if (ocupat || acabat) return;
+      ocupat = true;
+      assenyala(null);
+      const ordre = [u, ...companys];
+      for (let i = 0; i < 4; i++) {
+        const a = ordre[i], b = ordre[i + 1];
+        if (dist(a, b) > 430) {
+          fallada();
+          await Veu.diu(`${a.num === 1 ? "De l'u" : `Del ${NUMEROS[a.num]}`} al ${NUMEROS[b.num]} és massa lluny. Posa'ls més a prop!`);
+          break;
+        }
+        const lladre = vermells.find(v => aLinia(v, a, b) < 50);
+        if (lladre) {
+          fallada();
+          await mou(pilota, lladre.x, lladre.y, 450);
+          await Veu.diu('Pel mig te la prenen! Passa per la banda.');
+          break;
+        }
+        await mou(pilota, b.x + 20, b.y, 450);
+        Veu.diu(NUMEROS[b.num]);
+        if (b.num === 5) {
+          if (b.x < 760) {
+            fallada();
+            await Veu.diu('El cinc és massa lluny de la porteria. Acosta-l\'hi!');
+            break;
+          }
+          return gol("Gol! Hem passat de l'u al cinc!");
+        }
+      }
+      if (elTorn !== torn) return;
+      Object.assign(pilota, { x: u.x + 40, y: u.y }); posa(pilota);
+      ocupat = false;
+      if (cercles) assenyalaJugador(següent());
+    }
+    boto.addEventListener('click', () => { if (!demo) passa(); });
+    if (demo) {
+      diu(frase).then(async () => {
+        for (let i = 0; i < 4; i++) { if (elTorn !== torn) return; await demoArrossega(companys[i], ruta[i].x, ruta[i].y); }
+        await mouMa(centre(boto), 500);
+        await tocaMa();
+        if (elTorn === torn) passa();
+      });
+    } else { Veu.diu(frase); if (cercles) assenyalaJugador(companys[0]); }
+    return;
+  }
+
+  /* --- Atacar separats / defensar junts --- */
+  const atac = jugada === 'atac';
+  const inicials = atac
+    ? [[330, A / 2 - 60], [370, A / 2 + 30], [300, A / 2 + 80], [400, A / 2 - 10]]
+    : [[480, 90], [620, A - 100], [720, 230], [700, A / 2 + 120]];
+  const blaus = inicials.map(([x, y], i) => fesJugador('.blaus', 'mobil', x, y, [4, 6, 7, 9][i]));
+  if (atac) {
+    [[620, A / 2 - 40], [700, A / 2 + 50], [780, A / 2 - 10]].forEach(([x, y], i) => fesJugador('.vermells', '', x, y, i + 2));
+    Object.assign(pilota, { x: blaus[3].x + 40, y: blaus[3].y });
+  } else {
+    [[520, A / 2], [600, 140], [600, A - 140]].forEach(([x, y], i) => fesJugador('.vermells', '', x, y, [10, 11, 5][i]));
+    Object.assign(pilota, { x: 480, y: A / 2 });
+  }
+  posa(pilota);
+  const zones = atac
+    ? [{ x: 620, y: 80 }, { x: 620, y: A - 80 }, { x: 470, y: A / 2 }, { x: 800, y: A / 2 }]
+    : [{ x: 220, y: A / 2, rx: 140, ry: 190 }];
+  if (cercles) capaZones.innerHTML = zones.map(z => z.rx ? `<ellipse cx="${z.x}" cy="${z.y}" rx="${z.rx}" ry="${z.ry}"/>` : cercle(z)).join('');
+  const frase = atac
+    ? (cercles ? 'Ataquem! Quan ataquem, ens separem. Porta cada jugador blau a un cercle.' : 'Ataquem! Quan ataquem, ens separem. Col·loca els blaus i toca la pilota.')
+    : (cercles ? 'Defensem! Quan defensem, anem junts. Porta els jugadors blaus al cercle.' : 'Defensem! Quan defensem, anem junts. Col·loca els blaus i toca la pilota.');
+  repetir = () => Veu.diu(frase);
+  if (!cercles) boto.hidden = false;
+  const dinsZona = (j, z) => (z.rx ? ((j.x - z.x) / z.rx) ** 2 + ((j.y - z.y) / z.ry) ** 2 <= 1 : dist(j, z) <= 75);
+  const benColocats = () => {
+    if (cercles) return atac ? zones.every(z => blaus.some(j => dinsZona(j, z))) : blaus.every(j => dinsZona(j, zones[0]));
+    if (atac) {
+      const separats = blaus.every((a, i) => blaus.every((b, n) => n === i || dist(a, b) > 170));
+      return separats && blaus.some(j => j.y < 150) && blaus.some(j => j.y > A - 150) && blaus.some(j => j.x > 650);
+    }
+    const cx = blaus.reduce((s, j) => s + j.x, 0) / blaus.length, cy = blaus.reduce((s, j) => s + j.y, 0) / blaus.length;
+    return cx < 400 && blaus.every(j => dist(j, { x: cx, y: cy }) < 160);
+  };
+  // La fletxa d'ajuda va al primer jugador que encara no és al seu lloc.
+  const següentPerMoure = () => (atac
+    ? blaus.find(j => !zones.some(z => dinsZona(j, z)))
+    : blaus.find(j => !dinsZona(j, zones[0])));
+  async function juga() {
+    if (acabat) return;
+    acabat = true;
+    assenyala(null);
+    if (atac) {
+      const banda = blaus.reduce((m, j) => (Math.abs(j.y - A / 2) > Math.abs(m.y - A / 2) ? j : m));
+      const davanter = blaus.reduce((m, j) => (j !== banda && j.x > m.x ? j : m), blaus.find(j => j !== banda));
+      const yB = banda.y < A / 2 ? 90 : A - 90;
+      await mou(pilota, banda.x, banda.y, 550);
+      await Promise.all([mou(banda, 880, yB, 800), mou(pilota, 900, yB, 800), mou(davanter, 860, A / 2, 800)]);
+      await mou(pilota, davanter.x + 20, davanter.y, 400);
+      return gol('Gol! Separats tenim més espai!');
+    }
+    const lladre = blaus.reduce((m, j) => (j.x > m.x ? m : j));
+    await mou(pilota, lladre.x + 30, lladre.y, 700);
+    So.encert();
+    fet('Molt bé! Junts, no ens passen!');
+  }
+  const revisa = manual => {
+    if (acabat) return;
+    if (benColocats()) return juga();
+    if (cercles) assenyalaJugador(següentPerMoure());
+    if (!manual) return;
+    fallada();
+    Veu.diu(atac ? "Encara estan massa junts. Separa'ls: un a cada banda i un a davant!" : "Encara estan massa separats. Ajunta'ls a prop de la porteria!");
+  };
+  boto.addEventListener('click', () => revisa(true));
+  arrossegables.push(...blaus);
+  quanDeixa = () => { if (cercles) revisa(false); };
+  if (demo) {
+    const offs = [[-50, -60], [50, -60], [-50, 60], [50, 60]];
+    diu(frase).then(async () => {
+      for (let i = 0; i < blaus.length; i++) {
+        if (elTorn !== torn) return;
+        const z = atac ? zones[i] : { x: zones[0].x + offs[i][0], y: zones[0].y + offs[i][1] };
+        await demoArrossega(blaus[i], z.x, z.y);
+      }
+      if (elTorn === torn) juga();
+    });
+  } else { Veu.diu(frase); if (cercles) assenyalaJugador(següentPerMoure()); }
+}
+
+/* Treure la pilota: el contrari fa un engany amb la pilota, però el cos diu cap on va. */
+function jugadaTreure(k) {
+  const { elTorn, demo, rapid, zonaJoc, mouMa, tocaMa, centre, fet, fallada, diu } = k;
+  zonaJoc.innerHTML = `
+    <svg class="escena" viewBox="0 0 600 520">
+      <rect class="cel-escena" x="0" y="0" width="600" height="300"/>
+      <rect class="terra" x="0" y="300" width="600" height="220"/>
+      <g class="rival" transform="translate(300,0)">
+        <g class="cames"><path d="M-18,330l-22,95M18,330l22,95"/></g>
+        <g class="cos-rival">
+          <rect x="-48" y="200" width="96" height="140" rx="30"/>
+          <text x="0" y="272">10</text>
+          <circle class="cap" cx="0" cy="160" r="40"/>
+          <path class="bracos" d="M-46,215l-50,70M46,215l50,70"/>
+        </g>
+      </g>
+      <g class="pilota-escena" transform="translate(300,452)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
+      <g class="defensor" transform="translate(300,500)"><ellipse rx="70" ry="22"/></g>
+    </svg>
+    <div class="fletxes" hidden>
+      <button data-costat="-1" aria-label="Esquerra">⬅️</button>
+      <button data-costat="1" aria-label="Dreta">➡️</button>
+    </div>`;
+  const rival = zonaJoc.querySelector('.rival');
+  const cos = zonaJoc.querySelector('.cos-rival');
+  const pil = zonaJoc.querySelector('.pilota-escena');
+  const def = zonaJoc.querySelector('.defensor');
+  const fletxes = zonaJoc.querySelector('.fletxes');
+  const costat = Math.random() < 0.5 ? -1 : 1;
+  const angle = rapid && !demo ? 9 : 18;
+  let ocupat = true;
+  const anima = (el, f, ms) => new Promise(r => {
+    const t0 = performance.now();
+    const pas = ara => {
+      if (elTorn !== torn) return r();
+      const t = Math.min(1, (ara - t0) / ms), e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      el.setAttribute('transform', f(e));
+      t < 1 ? requestAnimationFrame(pas) : r();
+    };
+    requestAnimationFrame(pas);
+  });
+  async function engany() {
+    ocupat = true;
+    fletxes.hidden = true;
+    rival.setAttribute('transform', 'translate(300,0)');
+    cos.setAttribute('transform', '');
+    pil.setAttribute('transform', 'translate(300,452)');
+    def.setAttribute('transform', 'translate(300,500)');
+    await espera(400);
+    const ms = rapid && !demo ? 380 : 650;
+    await Promise.all([
+      anima(pil, t => `translate(${300 - costat * 110 * t},452)`, ms),
+      anima(cos, t => `rotate(${costat * angle * t} 0 340)`, ms),
+    ]);
+    await anima(pil, t => `translate(${300 - costat * 110 * (1 - t)},452)`, ms);
+    if (elTorn !== torn) return;
+    fletxes.hidden = false;
+    ocupat = false;
+  }
+  async function tria(c) {
+    ocupat = true;
+    fletxes.hidden = true;
+    await Promise.all([
+      anima(rival, t => `translate(${300 + costat * 170 * t},0)`, 500),
+      anima(pil, t => `translate(${300 + costat * 190 * t},452)`, 500),
+      anima(def, t => `translate(${300 + c * 170 * t},500)`, 500),
+    ]);
+    if (elTorn !== torn) return;
+    if (c === costat) return fet('Li has pres la pilota! Has mirat el cos.');
+    fallada();
+    await Veu.diu("T'ha enganyat amb la pilota! Mira el cos.");
+    if (elTorn === torn) { await engany(); Veu.diu('Cap a on anirà? Mira el cos.'); }
+  }
+  fletxes.addEventListener('click', e => {
+    const b = e.target.closest('[data-costat]');
+    if (!b || ocupat || demo) return;
+    tria(Number(b.dataset.costat));
+  });
+  repetir = () => Veu.diu('Mira el cos, no la pilota. Cap a on anirà?');
+  diu("Treu-li la pilota! La pilota t'enganya; el cos diu cap on va.").then(async () => {
+    if (elTorn !== torn) return;
+    await engany();
+    if (elTorn !== torn) return;
+    if (!demo) return Veu.diu('Cap a on anirà? Mira el cos, no la pilota.');
+    await Veu.diu(costat < 0 ? "El cos s'inclina cap aquí. Anirà cap aquí!" : "El cos s'inclina cap aquí. Anirà cap aquí!");
+    await mouMa(centre(fletxes.querySelector(`[data-costat="${costat}"]`)), 600);
+    await tocaMa();
+    if (elTorn === torn) tria(costat);
+  });
+}
+
+/* Xut a porteria, com un penal: direcció, alçada i força. Acaba quan entra. */
+function xutFinal(k) {
+  const { elTorn, demo, rapid, zonaJoc, mouMa, tocaMa, centre, fallada } = k;
+  const P = { x0: 70, x1: 530, y0: 90, y1: 330 };
+  const velocitat = rapid && !demo ? 2.4 : 1.5;
+  zonaJoc.innerHTML = `
+    <div class="penal">
+      <svg class="escena xut" viewBox="0 0 600 520">
+        <rect class="cel-escena" x="0" y="0" width="600" height="330"/>
+        <rect class="terra" x="0" y="330" width="600" height="190"/>
+        <rect class="xarxa" x="${P.x0}" y="${P.y0}" width="${P.x1 - P.x0}" height="${P.y1 - P.y0}"/>
+        <path class="pals" d="M${P.x0},${P.y1}V${P.y0}H${P.x1}V${P.y1}"/>
+        <g class="porter-escena">
+          <path class="bracos" d="M-40,175l-48,-45M40,175l48,-45"/>
+          <path class="cames" d="M-16,265l-18,62M16,265l18,62"/>
+          <rect x="-42" y="160" width="84" height="110" rx="26"/>
+          <circle class="cap" cx="0" cy="128" r="32"/>
+        </g>
+        <line class="mira-v" y1="60" y2="360"/>
+        <line class="mira-h" x1="40" x2="560" style="display:none"/>
+        <circle class="diana" r="22" style="display:none"/>
+        <g class="pilota-escena" transform="translate(300,460)"><circle r="30"/><path d="M-10,-8l10,-7l10,7l-4,12h-12z"/></g>
+      </svg>
+      <div class="forca" hidden><div class="forca-bona"></div><div class="forca-nivell"></div></div>
+    </div>`;
+  const escena = zonaJoc.querySelector('.escena');
+  const porter = zonaJoc.querySelector('.porter-escena');
+  const pil = zonaJoc.querySelector('.pilota-escena');
+  const miraV = zonaJoc.querySelector('.mira-v');
+  const miraH = zonaJoc.querySelector('.mira-h');
+  const diana = zonaJoc.querySelector('.diana');
+  const forca = zonaJoc.querySelector('.forca');
+  const nivellForca = zonaJoc.querySelector('.forca-nivell');
+  const BONA = [0.45, 0.8]; // força bona
+  const vis = (el, si) => { el.style.display = si ? '' : 'none'; };
+  const px = Math.random() < 0.5 ? 160 : 440; // el porter, a un costat
+  porter.setAttribute('transform', `translate(${px},0)`);
+
+  return new Promise(resol => {
+    let pas = 0; // 0: direcció, 1: alçada, 2: força, 3: xutant
+    let t = Math.random() * 6;
+    let x = 300, y = 210, f = 0;
+    let abans = performance.now();
+    const posa = () => {
+      miraV.setAttribute('x1', x); miraV.setAttribute('x2', x);
+      miraH.setAttribute('y1', y); miraH.setAttribute('y2', y);
+      diana.setAttribute('cx', x); diana.setAttribute('cy', y);
+      nivellForca.style.height = `${f * 100}%`;
+      nivellForca.classList.toggle('bona', f >= BONA[0] && f <= BONA[1]);
+    };
+    const comença = () => {
+      pas = 0;
+      pil.setAttribute('transform', 'translate(300,460)');
+      vis(miraV, true); vis(miraH, false); vis(diana, false); forca.hidden = true;
+      Veu.diu(demo ? 'Mira! Primer, cap a on xutes.' : 'Atura la fletxa on vols xutar.');
+    };
+    const roda = ara => {
+      if (elTorn !== torn) return;
+      t += (ara - abans) / 1000 * velocitat;
+      abans = ara;
+      if (pas === 0) x = 300 + Math.sin(t) * 250;
+      if (pas === 1) y = 210 + Math.sin(t) * 140;
+      if (pas === 2) f = (1 - Math.cos(t * 1.3)) / 2;
+      posa();
+      if (demo) provaDemo();
+      requestAnimationFrame(roda);
+    };
+    // A la demostració, la mà toca quan la fletxa és a un bon lloc.
+    let esperantMa = false;
+    const objectiu = { x: px < 300 ? 440 : 160, y: 170, f: 0.62 };
+    const provaDemo = async () => {
+      if (esperantMa || pas > 2) return;
+      const prou = pas === 0 ? Math.abs(x - objectiu.x) < 14 : pas === 1 ? Math.abs(y - objectiu.y) < 10 : Math.abs(f - objectiu.f) < 0.04;
+      if (!prou) return;
+      esperantMa = true;
+      atura();
+      await tocaMa();
+      esperantMa = false;
+    };
+    async function atura() {
+      if (pas === 0) { pas = 1; vis(miraH, true); vis(diana, true); Veu.diu(demo ? 'Ara, a quina alçada.' : 'Ara, a quina alçada?'); return; }
+      if (pas === 1) { pas = 2; vis(miraV, false); vis(miraH, false); forca.hidden = false; t = 0; Veu.diu(demo ? 'I la força: a la zona verda.' : 'I ara la força! Ni poc ni massa.'); return; }
+      if (pas !== 2) return;
+      pas = 3;
+      const fluix = f < BONA[0], fort = f > BONA[1];
+      const fi = { x, y: fort ? P.y0 - 70 : y };
+      const durada = fluix ? 900 : 420;
+      const t0 = performance.now();
+      await new Promise(r => {
+        const vola = ara => {
+          if (elTorn !== torn) return r();
+          const s = Math.min(1, (ara - t0) / durada);
+          pil.setAttribute('transform', `translate(${300 + (fi.x - 300) * s},${460 + (fi.y - 460) * s}) scale(${1 - 0.45 * s})`);
+          s < 1 ? requestAnimationFrame(vola) : r();
+        };
+        requestAnimationFrame(vola);
+      });
+      if (elTorn !== torn) return;
+      const fora = x < P.x0 + 12 || x > P.x1 - 12 || y < P.y0 + 12;
+      const aturada = fluix || Math.abs(x - px) < 110;
+      let avis = null;
+      if (fort) avis = "Massa fort! Se n'ha anat per dalt.";
+      else if (fora) avis = 'Per poc! Ha anat fora. Xuta dins la porteria.';
+      else if (aturada) avis = fluix ? "Massa fluix! El porter l'ha agafada." : "El porter l'ha aturada! Xuta on no hi ha el porter.";
+      if (avis) {
+        fallada();
+        if (aturada && !fort && !fora) pil.setAttribute('transform', `translate(${px},210) scale(0.55)`);
+        await Veu.diu(avis);
+        if (elTorn === torn) comença();
+        return;
+      }
+      escena.classList.add('gol');
+      resol();
+    }
+    escena.addEventListener('pointerdown', () => { if (!demo && pas <= 2) atura(); });
+    forca.addEventListener('pointerdown', () => { if (!demo && pas === 2) atura(); });
+    comença();
+    if (demo) mouMa(centre(escena), 500);
+    requestAnimationFrame(roda);
+  });
+}
+
+/* Xutar on no hi ha el porter. */
+async function jugadaXut(k) {
+  repetir = () => Veu.diu('Xuta on no hi ha el porter!');
+  await k.diu('Xuta on no hi ha el porter!');
+  if (k.elTorn !== torn) return;
+  await xutFinal(k);
+  if (k.elTorn === torn) k.fet('Gol! On no hi ha el porter!');
 }
 
 /* ---------- Mode adult ---------- */

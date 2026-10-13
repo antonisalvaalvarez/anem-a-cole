@@ -10,6 +10,7 @@ const Estat = (() => {
       nivells: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0, laberint: 0, futbol: 0 },
       seguits: { lletres: 0, sillabes: 0, paraules: 0, numeros: 0, compta: 0, uneix: 0, globus: 0, parelles: 0, laberint: 0, futbol: 0 },
       vistes: [], // lletres que ja s'han presentat
+      demos: {}, // quantes demostracions de futbol s'han vist
       ajustos: {
         lletres: [...LLETRES_INICIALS],
         tipus: TIPUS_LLETRA_INICIAL,

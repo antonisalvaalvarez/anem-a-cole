@@ -31,7 +31,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit en ordre sense creuar línies; a dalt, fila de números que es pinten quan es fan; nivells amb corbes obligatòries i fins al 15; si es creuen, "Tornem-hi!", mai "has perdut").
 - Globus (explotar els globus en ordre mentre pugen; si se'n va el que busca, torna a sortir) i Parelles (memòria: número amb quantitat o lletra amb dibuix).
 - Laberint (portar el cotxe amb el dit recollint els números en ordre i sortir per la bandera; les parets no deixen passar).
-- Futbol: jugar per les bandes (passar per la banda, no pel mig), atacar separats, defensar junts i treure la pilota mirant el cos (no la pilota) desmarcar-se (anar a un lloc on cap contrari tapi la passada) i xutar on no hi ha el porter.
+- Futbol (les primeres vegades, una mà fa la demostració; rètol a dalt; a prop de porteria, xut de cara en 3 tocs: direcció, alçada i força; córner assajat; passades de l'1 al 5): jugar per les bandes (passar per la banda, no pel mig), atacar separats, defensar junts i treure la pilota mirant el cos (no la pilota) desmarcar-se (anar a un lloc on cap contrari tapi la passada) i xutar on no hi ha el porter.
 - Han de ser **ràpids**: frases curtes, poques esperes, passar sol a la pregunta següent.
 
 ## Fora d'abast

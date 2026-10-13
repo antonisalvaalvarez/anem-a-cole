@@ -19,7 +19,7 @@
 - [ ] Laberint: si és prou difícil i si el cotxe es mou bé amb el dit.
 
 ## Per provar (versió 6)
-- [ ] Futbol: si entén les 4 jugades i si arrossegar els jugadors és fàcil.
+- [ ] Futbol: si ara s'entén amb la demostració, si el xut de 3 tocs és massa difícil, i si arrossegar els jugadors és fàcil.
 
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
@@ -31,6 +31,6 @@
 ## Idees per a més endavant
 - Més jocs de números: més gran / més petit, sumes amb dibuixos.
 - El tren dels números, uneix i descobreix un dibuix.
-- Més jugades de futbol (córner).
+- Més jugades de futbol.
 - Síl·labes inverses (AM, EL) i de tres lletres.
 - Frases curtes.
