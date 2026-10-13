@@ -82,13 +82,24 @@ const PARAULES = [
 ];
 
 // Números de l'1 al 10: com els diu la veu.
-const NUMEROS = { 1: 'u', 2: 'dos', 3: 'tres', 4: 'quatre', 5: 'cinc', 6: 'sis', 7: 'set', 8: 'vuit', 9: 'nou', 10: 'deu' };
+const NUMEROS = {
+  1: 'u', 2: 'dos', 3: 'tres', 4: 'quatre', 5: 'cinc', 6: 'sis', 7: 'set', 8: 'vuit', 9: 'nou', 10: 'deu',
+  11: 'onze', 12: 'dotze', 13: 'tretze', 14: 'catorze', 15: 'quinze',
+};
 
 // Dibuixos per al joc de comptar.
 const COSES_PER_COMPTAR = ['🍎', '🐞', '⭐', '🎈', '🐟', '🌸', '🚗', '🍓', '🐥', '⚽', '🦋', '🍪'];
 
-// Joc d'unir: quants números hi ha a cada nivell.
-const UNEIX_PUNTS_PER_NIVELL = [5, 7, 10];
+// Joc d'unir. Per a cada nivell: quants números hi ha i quantes vegades
+// es creuarien les línies si s'unissin en recta (cal fer corbes per esquivar-les).
+const UNEIX_NIVELLS = [
+  { punts: 10, creus: 0 },
+  { punts: 10, creus: 1 },
+  { punts: 10, creus: 2 },
+  { punts: 12, creus: 2 },
+  { punts: 12, creus: 3 },
+  { punts: 15, creus: 3 },
+];
 
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).
 const ADHESIUS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐵',
@@ -109,7 +120,6 @@ const FRASES = {
   encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],
   error: ['Gairebé!', 'Torna-ho a provar!', 'Tu pots!'],
   uneix: 'Uneix els números amb el dit, sense creuar les línies.',
-  uneixFet: 'Ho has aconseguit!',
   creuat: "Uf, s'han creuat! Tornem-hi!",
   nivell: 'Has pujat de nivell! Ets un crack!',
   adhesiu: 'Has guanyat un adhesiu nou!',

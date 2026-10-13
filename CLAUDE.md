@@ -22,12 +22,13 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 
 ## Privadesa (el repositori és públic)
 - El progrés es guarda només a la tablet. Cap enviament de dades enlloc, cap recurs extern (ni fonts ni scripts de fora).
+- El nom del nen només s'escriu al mode adult i es guarda a la tablet; mai al codi.
 - Res de noms, escola, fotos familiars, dades personals, contrasenyes ni claus dins el codi.
 - Si mai cal guardar dades privades, preguntar-ho abans.
 
 ## Jocs
 - Lletres, Síl·labes, Paraules.
-- Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit de l'1 al 10 sense creuar línies; si es creuen, "Tornem-hi!", mai "has perdut").
+- Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit en ordre sense creuar línies; nivells amb corbes obligatòries i fins al 15; si es creuen, "Tornem-hi!", mai "has perdut").
 - Han de ser **ràpids**: frases curtes, poques esperes, passar sol a la pregunta següent.
 
 ## Fora d'abast

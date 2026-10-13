@@ -15,6 +15,7 @@ const Estat = (() => {
         tipus: TIPUS_LLETRA_INICIAL,
         velocitat: 1,
         veu: null,
+        nom: '', // nom del nen: només es guarda a la tablet
       },
     };
   }

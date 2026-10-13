@@ -450,4 +450,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .boto-text.perill { color: #B4442F; }
 .boto-text.principal { background: var(--verd); color: var(--blanc); width: 100%; justify-content: center; }
 
+.camp-text { width: 100%; min-height: 48px; font-size: 18px; padding: 0 14px; border: 2px solid var(--vora); border-radius: 12px; margin-top: 6px; }
+.nivells { display: grid; gap: 8px; margin-top: 8px; }
+.fila-nivell { display: grid; grid-template-columns: 1fr 52px 80px 52px; align-items: center; gap: 8px; font-size: 17px; }
+.fila-nivell button { height: 48px; border-radius: 12px; background: #F4EFE7; font-size: 26px; font-weight: 700; }
+.fila-nivell b { text-align: center; }
 .avis { flex: 1; display: grid; place-items: center; padding: 6vmin; text-align: center; font-size: 5vmin; }

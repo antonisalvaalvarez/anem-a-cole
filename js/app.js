@@ -507,12 +507,22 @@ function distSegment(p, a, b) {
   return dist(p, { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
 }
 
-// Col·loca n punts de manera que el camí recte 1→2→…→n no es creui
-// i no passi per sobre d'altres números. Així sempre es pot fer.
-function colocaPunts(n, w, h, R) {
-  const marge = R * 1.4;
+// Quantes vegades es creuen les línies rectes 1→2→…→n.
+function creuaments(punts) {
+  let c = 0;
+  for (let i = 0; i < punts.length - 3; i++)
+    for (let j = i + 2; j < punts.length - 1; j++)
+      if (talla(punts[i], punts[i + 1], punts[j], punts[j + 1])) c++;
+  return c;
+}
+
+// Col·loca n punts de manera que el camí recte 1→2→…→n es creui exactament
+// "creus" vegades (0 = es pot fer en línia recta). Cap línia recta passa per
+// sobre d'un altre número, i queda espai a les vores per fer corbes.
+function colocaPunts(n, w, h, R, creus = 0) {
+  const marge = R * (creus ? 2.2 : 1.4);
   let millor = null;
-  for (let intent = 0; intent < 300; intent++) {
+  for (let intent = 0; intent < 400; intent++) {
     const punts = [];
     let proves = 0;
     while (punts.length < n && proves++ < 2000) {
@@ -520,37 +530,36 @@ function colocaPunts(n, w, h, R) {
       if (punts.every(q => dist(p, q) > R * 3.4)) punts.push(p);
     }
     if (punts.length < n) continue;
-    // Desfà els creuaments (2-opt).
-    let canvi = true, voltes = 0;
-    while (canvi && voltes++ < 500) {
-      canvi = false;
-      for (let i = 0; i < n - 3 && !canvi; i++) {
+    // Desfà creuaments (2-opt) fins que en quedin els que volem.
+    let voltes = 0;
+    while (creuaments(punts) > creus && voltes++ < 500) {
+      let fet = false;
+      for (let i = 0; i < n - 3 && !fet; i++) {
         for (let j = i + 2; j < n - 1; j++) {
           if (talla(punts[i], punts[i + 1], punts[j], punts[j + 1])) {
             const tros = punts.slice(i + 1, j + 1).reverse();
             punts.splice(i + 1, tros.length, ...tros);
-            canvi = true;
+            fet = true;
             break;
           }
         }
       }
     }
-    if (canvi) continue;
-    // Cap línia recta ha de passar per sobre d'un altre número.
+    if (creuaments(punts) !== creus) continue;
     const net = punts.every((p, k) => punts.every((a, i) =>
       i === n - 1 || i === k || i + 1 === k || distSegment(p, a, punts[i + 1]) > R * 1.5));
-    millor = punts;
-    if (net) break;
+    if (!millor) millor = punts;
+    if (net) return punts;
   }
-  return millor;
+  return millor || colocaPunts(n, w, h, R, Math.max(0, creus - 1));
 }
 
 function pantallaUneix() {
   torn++;
   const elTorn = torn;
-  const maxNivell = UNEIX_PUNTS_PER_NIVELL.length - 1;
+  const maxNivell = UNEIX_NIVELLS.length - 1;
   const nivell = Math.min(D().nivells.uneix, maxNivell);
-  const n = UNEIX_PUNTS_PER_NIVELL[nivell];
+  const { punts: n, creus } = UNEIX_NIVELLS[nivell];
   repetir = () => Veu.diu(FRASES.uneix);
   app.innerHTML = `
     ${barra({ repetir: true })}
@@ -558,8 +567,9 @@ function pantallaUneix() {
 
   const svg = app.querySelector('.tauler');
   const { width: w, height: h } = svg.getBoundingClientRect();
-  const R = Math.max(30, Math.min(w, h) * 0.075);
-  const punts = colocaPunts(n, w, h, R);
+  // Amb més números, una mica més petits perquè hi càpiguen.
+  const R = Math.max(28, Math.min(w, h) * 0.075 * Math.sqrt(Math.min(1, 10 / n)));
+  const punts = colocaPunts(n, w, h, R, creus);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   const NS = 'http://www.w3.org/2000/svg';
   const capaLinies = document.createElementNS(NS, 'g');
@@ -618,7 +628,7 @@ function pantallaUneix() {
     bloquejat = true;
     svg.classList.add('acabat');
     So.premi();
-    await Veu.seqüencia([aleatori(FRASES.encert), FRASES.uneixFet]);
+    await Veu.diu(D().ajustos.nom ? `Molt bé, ${D().ajustos.nom}!` : 'Molt bé!');
     if (elTorn !== torn) return;
     await apunta('uneix', primerIntent, maxNivell);
     if (elTorn === torn) pantallaUneix();
@@ -677,10 +687,23 @@ function pantallaUneix() {
   svg.addEventListener('pointerup', deixa);
   svg.addEventListener('pointercancel', deixa);
 
-  Veu.seqüencia([FRASES.uneix, `Comença per ${articleNum(1)}.`]);
+  Veu.seqüencia([FRASES.uneix, ...(creus ? ['Si cal, fes una corba.'] : []), `Comença per ${articleNum(1)}.`]);
 }
 
 /* ---------- Mode adult ---------- */
+// Nivell més alt de cada joc.
+function maxNivells() {
+  const p = paraulesDisponibles().length;
+  return {
+    lletres: actives().length - 1,
+    sillabes: Math.max(0, consonantsActives().length - 1),
+    paraules: Math.max(0, (p >= 3 ? p : 6) - 3),
+    numeros: 7,
+    compta: 7,
+    uneix: UNEIX_NIVELLS.length - 1,
+  };
+}
+
 function preparaBotoAdult(boto) {
   let temps = null;
   const atura = () => { clearTimeout(temps); boto.classList.remove('carregant'); };
@@ -764,10 +787,28 @@ function pantallaAdult() {
       </section>
 
       <section>
+        <h3>Nom</h3>
+        <p class="ajuda">La veu el diu quan acaba un joc ("Molt bé, …!"). Només es guarda en aquesta tablet.</p>
+        <input class="camp-text" id="nom" maxlength="20" autocomplete="off" value="${(aj.nom || '').replace(/"/g, '&quot;')}" placeholder="Nom">
+      </section>
+
+      <section>
+        <h3>Nivells</h3>
+        <p class="ajuda">Puja o baixa el nivell de cada joc. Puja sol quan l'encerta ${ENCERTS_PER_NIVELL} vegades seguides.</p>
+        <div class="nivells">
+          ${Object.entries(maxNivells()).map(([joc, max]) => `
+            <div class="fila-nivell" data-joc="${joc}">
+              <span>${FRASES.menu[joc]}</span>
+              <button data-canvi="-1" aria-label="Baixa">−</button>
+              <b>${Math.min(n[joc], max) + 1} / ${max + 1}</b>
+              <button data-canvi="1" aria-label="Puja">+</button>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section>
         <h3>Progrés</h3>
         <p>⭐ ${D().estrelles} estrelles · ${D().adhesius} adhesius</p>
-        <p>Nivell lletres: ${n.lletres + 1} · síl·labes: ${n.sillabes + 1} · paraules: ${n.paraules + 1}</p>
-        <p>Nivell números: ${n.numeros + 1} · compta: ${n.compta + 1} · uneix: ${n.uneix + 1}</p>
         <p class="ajuda">El progrés només es guarda en aquesta tablet.</p>
         <button class="boto-text perill" id="esborra">Esborrar el progrés</button>
       </section>
@@ -797,6 +838,17 @@ function pantallaAdult() {
     aj.tipus = b.dataset.tipus;
     Estat.desa();
     pantallaAdult();
+  });
+  document.getElementById('nom').addEventListener('input', e => { aj.nom = e.target.value.trim(); Estat.desa(); });
+  app.querySelector('.nivells').addEventListener('click', e => {
+    const b = e.target.closest('[data-canvi]');
+    if (!b) return;
+    const joc = b.closest('[data-joc]').dataset.joc;
+    const max = maxNivells()[joc];
+    D().nivells[joc] = Math.max(0, Math.min(max, Math.min(n[joc], max) + Number(b.dataset.canvi)));
+    D().seguits[joc] = 0;
+    Estat.desa();
+    b.parentElement.querySelector('b').textContent = `${D().nivells[joc] + 1} / ${max + 1}`;
   });
   document.getElementById('veu')?.addEventListener('change', e => Veu.triar(e.target.value));
   document.getElementById('velocitat').addEventListener('change', e => { aj.velocitat = Number(e.target.value); Estat.desa(); });
