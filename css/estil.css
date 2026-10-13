@@ -123,7 +123,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
   margin: 0 auto;
 }
 @media (orientation: landscape) {
-  .inici { grid-template-columns: repeat(3, 1fr); }
+  .inici { grid-template-columns: repeat(4, 1fr); }
 }
 .targeta {
   border-radius: var(--radi);
@@ -145,6 +145,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .t-uneix { background: #4AA8FF; }
 .targeta .icona-uneix { width: 1em; height: 1em; stroke-width: 2; }
 .targeta .icona-uneix circle { fill: currentColor; }
+.t-globus { background: #F06FB0; }
+.t-parelles { background: #5BC0DE; }
 .boto-premis { font-size: 6vmin; }
 
 .boto-adult {
@@ -343,6 +345,66 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .punt.actual circle { fill: var(--sol); animation: batec-punt 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 
 @keyframes batec-punt { 50% { transform: scale(1.15); } }
+
+/* Globus */
+.cel { flex: 1; position: relative; overflow: hidden; touch-action: none; }
+.globus-num {
+  position: absolute; left: 0; top: 0;
+  border-radius: 50% 50% 48% 48% / 55% 55% 45% 45%;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.55) 0 12%, transparent 13%), var(--color);
+  color: var(--blanc); font-weight: 800;
+  box-shadow: inset -0.8vmin -1.2vmin 0 rgba(0,0,0,0.08);
+  will-change: transform;
+}
+.globus-num span { display: block; transform: translateY(-4%); text-shadow: 0 0.3vmin 0 rgba(0,0,0,0.15); }
+.globus-num::after {
+  content: ''; position: absolute; left: 50%; top: 100%;
+  width: 2px; height: 40%; background: rgba(43,45,66,0.25);
+}
+.globus-num.explota { animation: explota 0.3s ease-out forwards; pointer-events: none; }
+.globus-num.explota span { opacity: 0; }
+@keyframes explota { to { opacity: 0; scale: 1.6; } }
+.globus-num.balla { animation: balla-globus 0.4s ease; }
+@keyframes balla-globus { 25% { rotate: -12deg; } 75% { rotate: 12deg; } }
+
+/* Parelles */
+.parelles {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--cols-v), 1fr);
+  grid-template-rows: repeat(var(--files-v), 1fr);
+  gap: 3vmin;
+  padding: 3vmin 5vmin 5vmin;
+  max-width: 120vmin; width: 100%; margin: 0 auto;
+}
+@media (orientation: landscape) {
+  .parelles { grid-template-columns: repeat(var(--cols-h), 1fr); grid-template-rows: repeat(var(--files-h), 1fr); max-width: 150vmin; }
+}
+.carta { position: relative; perspective: 800px; min-height: 0; }
+.carta .dors, .carta .cara {
+  position: absolute; inset: 0;
+  border-radius: 3vmin;
+  display: grid; place-items: center;
+  backface-visibility: hidden;
+  transition: transform 0.35s ease;
+  box-shadow: var(--ombra);
+}
+.carta .dors {
+  background: repeating-linear-gradient(45deg, #5BC0DE 0 3vmin, #4BB0CE 3vmin 6vmin);
+}
+.carta .dors::after { content: '?'; color: rgba(255,255,255,0.9); font-size: 10vmin; font-weight: 800; }
+.carta .cara { background: var(--blanc); transform: rotateY(180deg); padding: 1vmin; overflow: hidden; }
+.carta.girada .dors { transform: rotateY(180deg); }
+.carta.girada .cara { transform: rotateY(0); }
+.carta.feta .cara { box-shadow: 0 0 0 1vmin var(--verd), var(--ombra); }
+.carta-lletra { font-size: 13vmin; font-weight: 800; line-height: 1; }
+.carta-dibuix { font-size: 13vmin; line-height: 1; }
+.carta-coses { display: grid; justify-content: center; gap: 0.6vmin 1vmin; line-height: 1; }
+.carta-coses i { font-style: normal; }
+.carta-coses.c1 { grid-template-columns: auto; font-size: 11vmin; }
+.carta-coses.c2 { grid-template-columns: repeat(2, auto); font-size: 7vmin; }
+.carta-coses.c3 { grid-template-columns: repeat(3, auto); font-size: 5.8vmin; }
+.carta-coses.c4 { grid-template-columns: repeat(4, auto); font-size: 4.6vmin; }
 
 /* ---------- Celebració ---------- */
 .celebracio {

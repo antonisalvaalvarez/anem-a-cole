@@ -199,6 +199,14 @@ function pantallaInici(saluda = false) {
         <span class="dibuix">${ICONA.uneix}</span>
         <span class="nom">Uneix</span>
       </button>
+      <button class="targeta t-globus" data-anar="globus">
+        <span class="dibuix">🎈</span>
+        <span class="nom">Globus</span>
+      </button>
+      <button class="targeta t-parelles" data-anar="parelles">
+        <span class="dibuix">🃏</span>
+        <span class="nom">Parelles</span>
+      </button>
     </main>
     <button class="boto-adult" id="adult" aria-label="Adults: mantén premut">
       <svg class="anell" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/></svg>
@@ -212,6 +220,7 @@ function pantallaInici(saluda = false) {
     ({
       lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules,
       numeros: pantallaNumeros, compta: pantallaCompta, uneix: pantallaUneix,
+      globus: pantallaGlobus, parelles: pantallaParelles,
     })[on]();
   });
   preparaBotoAdult(document.getElementById('adult'));
@@ -628,7 +637,7 @@ function pantallaUneix() {
     bloquejat = true;
     svg.classList.add('acabat');
     So.premi();
-    await Veu.diu(D().ajustos.nom ? `Molt bé, ${D().ajustos.nom}!` : 'Molt bé!');
+    await Veu.diu(felicita());
     if (elTorn !== torn) return;
     await apunta('uneix', primerIntent, maxNivell);
     if (elTorn === torn) pantallaUneix();
@@ -690,6 +699,167 @@ function pantallaUneix() {
   Veu.seqüencia([FRASES.uneix, ...(creus ? ['Si cal, fes una corba.'] : []), `Comença per ${articleNum(1)}.`]);
 }
 
+/* ---------- 7. Globus: explota'ls en ordre ---------- */
+const felicita = () => (D().ajustos.nom ? `Molt bé, ${D().ajustos.nom}!` : 'Molt bé!');
+
+function pantallaGlobus() {
+  torn++;
+  const elTorn = torn;
+  const maxNivell = GLOBUS_NIVELLS.length - 1;
+  const nivell = Math.min(D().nivells.globus, maxNivell);
+  const { globus: n, velocitat } = GLOBUS_NIVELLS[nivell];
+  const COLORS = ['#FF7A6B', '#FFBE3D', '#2EC4A6', '#8C7BFF', '#4AA8FF', '#FF9F5A', '#F06FB0'];
+  const frase = "Explota els globus en ordre.";
+  let objectiu = 1;
+  repetir = () => Veu.seqüencia([frase, `Busca ${articleNum(objectiu)}.`]);
+  app.innerHTML = `${barra({ repetir: true })}<main class="cel"></main>`;
+  const cel = app.querySelector('.cel');
+  const { width: w, height: h } = cel.getBoundingClientRect();
+  const mida = Math.max(70, Math.min(w, h) * 0.17);
+  let primerIntent = true;
+  let acabat = false;
+
+  // Cada globus surt de sota i puja. Si arriba a dalt, torna a sortir per sota.
+  const surt = (g, primer) => {
+    g.x = mida * 0.1 + Math.random() * (w - mida * 1.2);
+    g.y = h + (primer ? Math.random() * h * 0.5 : Math.random() * h * 0.2);
+    g.fase = Math.random() * 6;
+  };
+  const globus = barreja(Array.from({ length: n }, (_, i) => i + 1)).map(num => {
+    const el = document.createElement('button');
+    el.className = 'globus-num';
+    el.style.cssText = `width:${mida}px;height:${mida * 1.2}px;font-size:${mida * 0.45}px;--color:${COLORS[num % COLORS.length]}`;
+    el.innerHTML = `<span>${num}</span>`;
+    cel.append(el);
+    const g = { num, el, viu: true };
+    surt(g, true);
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (!g.viu || acabat) return;
+      if (num === objectiu) {
+        g.viu = false;
+        el.classList.add('explota');
+        So.encert();
+        setTimeout(() => el.remove(), 300);
+        objectiu++;
+        if (objectiu > n) return final();
+        // Que el següent no trigui a sortir.
+        const seg = globus.find(x => x.num === objectiu);
+        if (seg.y > h) seg.y = h;
+        Veu.diu(NUMEROS[num]);
+      } else {
+        el.classList.remove('balla'); void el.offsetWidth; el.classList.add('balla');
+        Veu.diu(`Busca ${articleNum(objectiu)}.`);
+      }
+    });
+    return g;
+  });
+
+  async function final() {
+    acabat = true;
+    So.premi();
+    await Veu.diu(felicita());
+    if (elTorn !== torn) return;
+    await apunta('globus', primerIntent, maxNivell);
+    if (elTorn === torn) pantallaGlobus();
+  }
+
+  let abans = performance.now();
+  const pas = ara => {
+    if (elTorn !== torn || acabat) return;
+    const dt = Math.min(50, ara - abans) / 1000;
+    abans = ara;
+    for (const g of globus) {
+      if (!g.viu) continue;
+      g.y -= velocitat * h * dt;
+      g.fase += dt * 2;
+      if (g.y < -mida * 1.3) {
+        if (g.num === objectiu) primerIntent = false; // se n'ha anat el que buscava
+        surt(g, false);
+      }
+      g.el.style.transform = `translate(${g.x + Math.sin(g.fase) * mida * 0.15}px, ${g.y}px)`;
+    }
+    requestAnimationFrame(pas);
+  };
+  requestAnimationFrame(pas);
+  Veu.seqüencia([frase, `Comença per ${articleNum(1)}.`]);
+}
+
+/* ---------- 8. Parelles ---------- */
+// Columnes per posar les coses ben ordenades (com un dau).
+const COLUMNES_COSES = [0, 1, 2, 3, 2, 3, 3, 4, 4];
+function pantallaParelles() {
+  torn++;
+  const elTorn = torn;
+  const maxNivell = PARELLES_NIVELLS.length - 1;
+  const nivell = Math.min(D().nivells.parelles, maxNivell);
+  const parells = PARELLES_NIVELLS[nivell];
+  // Una vegada números amb quantitats, l'altra lletres amb dibuixos.
+  const ambLletres = Math.random() < 0.5 && actives().length >= parells;
+  let cartes = [];
+  if (ambLletres) {
+    barreja(actives()).slice(0, parells).forEach(l => {
+      const L = LLETRES[l];
+      cartes.push({ clau: l, cara: `<span class="carta-lletra">${mostra(l)}</span>`, diu: L.nom });
+      cartes.push({ clau: l, cara: `<span class="carta-dibuix">${L.dibuix}</span>`, diu: L.exemple });
+    });
+  } else {
+    const cosa = aleatori(COSES_PER_COMPTAR);
+    barreja(Array.from({ length: PARELLES_MAX_QUANTITAT }, (_, i) => i + 1)).slice(0, parells).forEach(x => {
+      cartes.push({ clau: x, cara: `<span class="carta-lletra">${x}</span>`, diu: NUMEROS[x] });
+      cartes.push({ clau: x, cara: `<span class="carta-coses c${COLUMNES_COSES[x]}">${`<i>${cosa}</i>`.repeat(x)}</span>`, diu: NUMEROS[x] });
+    });
+  }
+  cartes = barreja(cartes);
+  const frase = ambLletres ? 'Troba les parelles: cada lletra amb el seu dibuix.' : 'Troba les parelles: cada número amb els seus dibuixos.';
+  repetir = () => Veu.diu(frase);
+  const total = cartes.length;
+  const [cH, fH] = total <= 6 ? [3, 2] : total <= 8 ? [4, 2] : [4, 3]; // en horitzontal
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="parelles" style="--cols-h:${cH};--files-h:${fH};--cols-v:${fH};--files-v:${cH}">
+      ${cartes.map((c, i) => `<button class="carta" data-i="${i}"><span class="dors"></span><span class="cara">${c.cara}</span></button>`).join('')}
+    </main>`;
+
+  let girades = [];
+  let errors = 0;
+  let trobades = 0;
+  let ocupat = false;
+  app.querySelector('.parelles').addEventListener('click', async e => {
+    const b = e.target.closest('.carta');
+    if (!b || ocupat || b.classList.contains('girada')) return;
+    const c = cartes[b.dataset.i];
+    b.classList.add('girada');
+    girades.push(b);
+    Veu.diu(c.diu);
+    if (girades.length < 2) return;
+    ocupat = true;
+    const [a, z] = girades.map(x => cartes[x.dataset.i]);
+    if (a.clau === z.clau) {
+      girades.forEach(x => x.classList.add('feta'));
+      girades = [];
+      ocupat = false;
+      trobades++;
+      await espera(350);
+      So.encert();
+      if (trobades < parells) return;
+      So.premi();
+      await Veu.diu(felicita());
+      if (elTorn !== torn) return;
+      await apunta('parelles', errors <= parells, maxNivell);
+      if (elTorn === torn) pantallaParelles();
+    } else {
+      errors++;
+      await espera(900);
+      if (elTorn !== torn) return;
+      girades.forEach(x => x.classList.remove('girada'));
+      girades = [];
+      ocupat = false;
+    }
+  });
+  Veu.diu(frase);
+}
+
 /* ---------- Mode adult ---------- */
 // Nivell més alt de cada joc.
 function maxNivells() {
@@ -701,6 +871,8 @@ function maxNivells() {
     numeros: 7,
     compta: 7,
     uneix: UNEIX_NIVELLS.length - 1,
+    globus: GLOBUS_NIVELLS.length - 1,
+    parelles: PARELLES_NIVELLS.length - 1,
   };
 }
 

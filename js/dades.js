@@ -101,6 +101,19 @@ const UNEIX_NIVELLS = [
   { punts: 15, creus: 3 },
 ];
 
+// Globus: quants n'hi ha i com de ràpid pugen (part de la pantalla per segon).
+const GLOBUS_NIVELLS = [
+  { globus: 10, velocitat: 0.08 },
+  { globus: 10, velocitat: 0.12 },
+  { globus: 12, velocitat: 0.12 },
+  { globus: 15, velocitat: 0.14 },
+  { globus: 15, velocitat: 0.18 },
+];
+
+// Parelles: quantes parelles hi ha a cada nivell.
+const PARELLES_NIVELLS = [3, 4, 6];
+const PARELLES_MAX_QUANTITAT = 8; // a les cartes de dibuixos, com a molt 8 coses
+
 // Adhesius que es guanyen (un cada ESTRELLES_PER_ADHESIU estrelles).
 const ADHESIUS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐵',
   '🐧', '🦉', '🐢', '🐬', '🦋', '🐞', '🦄', '🐲', '🦒', '🐘'];
@@ -114,7 +127,8 @@ const FRASES = {
   benvinguda: 'Hola! Què vols fer avui?',
   menu: {
     lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules',
-    numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números', premis: 'Els meus premis',
+    numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números',
+    globus: 'Globus', parelles: 'Parelles', premis: 'Els meus premis',
   },
   // Curtes, perquè el joc vagi ràpid.
   encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],

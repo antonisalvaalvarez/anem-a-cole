@@ -11,6 +11,10 @@
 - [ ] Si els jocs ara van prou ràpids.
 - [ ] Joc Uneix: si els números són prou grans per al dit i si el nivell (5, 7, 10 números) és adequat.
 
+## Per provar (versió 4)
+- [ ] Globus: si la velocitat és bona i si es poden tocar bé quan estan junts.
+- [ ] Parelles: si entén el joc i si les cartes es veuen prou grans.
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).
@@ -20,5 +24,6 @@
 
 ## Idees per a més endavant
 - Més jocs de números: més gran / més petit, sumes amb dibuixos.
+- Laberint, el tren dels números, uneix i descobreix un dibuix.
 - Síl·labes inverses (AM, EL) i de tres lletres.
 - Frases curtes.
