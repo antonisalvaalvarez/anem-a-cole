@@ -1105,7 +1105,7 @@ const JUGADES = {
   corner: { emoji: '🚩', retol: 'Córner assajat' },
   passades: { emoji: '🔢', retol: "Passa de l'1 al 5" },
 };
-const DEMOS_PER_JUGADA = 2;
+const DEMOS_PER_JUGADA = 1;
 const CAMP = { L: 1000, A: 620 }; // la nostra porteria a x=0
 let darreraJugada = null;
 
@@ -1129,9 +1129,10 @@ function pantallaFutbol(forcada = null, demo = null) {
     <main class="futbol">
       <div class="retol">
         <span class="retol-emoji">${J.emoji}</span><b>${J.retol}</b>
-        ${demo ? '<span class="etiqueta">Mira com es fa</span>' : '<button class="boto-mira" aria-label="Mira com es fa">👀 Mira</button>'}
+        ${demo ? '<button class="boto-ara-jo">✋ Ara jo!</button>' : '<button class="boto-mira" aria-label="Mira com es fa">👀 Mira</button>'}
       </div>
       <div class="zona-joc"></div>
+      ${demo ? '<div class="tapa-demo" aria-label="Toca per jugar"></div>' : ''}
       <div class="ma" hidden>👆</div>
       <div class="indicador" hidden>👇</div>
     </main>`;
@@ -1140,6 +1141,10 @@ function pantallaFutbol(forcada = null, demo = null) {
   const ma = app.querySelector('.ma');
   const indicador = app.querySelector('.indicador');
   app.querySelector('.boto-mira')?.addEventListener('click', () => pantallaFutbol(jugada, true));
+  // Durant la demostració, tocar la pantalla l'atura i deixa jugar.
+  const araJo = e => { e.preventDefault(); Veu.calla(); pantallaFutbol(jugada, false); };
+  app.querySelector('.boto-ara-jo')?.addEventListener('pointerdown', araJo);
+  app.querySelector('.tapa-demo')?.addEventListener('pointerdown', araJo);
 
   // La mà de la demostració i la fletxa d'ajuda (en coordenades de pantalla).
   const relatiu = p => { const r = main.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; };

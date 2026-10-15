@@ -457,6 +457,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 }
 .retol-emoji { font-size: 5vmin; }
 .retol .etiqueta { font-size: 3vmin; color: var(--lila); font-weight: 700; padding: 0 2vmin; }
+.tapa-demo { position: absolute; inset: 0; z-index: 4; }
+.boto-ara-jo { position: relative; z-index: 6; font-size: 3.6vmin; font-weight: 800; color: var(--blanc); background: var(--verd); border-radius: 99px; padding: 1.4vmin 3vmin; animation: batec 1.4s ease-in-out infinite; }
 .boto-mira { font-size: 3.4vmin; font-weight: 700; background: #F4EFE7; border-radius: 99px; padding: 1.2vmin 2.6vmin; }
 .ma, .indicador {
   position: absolute; left: 0; top: 0; z-index: 5;
