@@ -1936,27 +1936,16 @@ function pantallaLateral(joc, ronda = 0, fallades = 0) {
         <span class="punts">${Array.from({ length: RONDES_MINIJOC }, (_, i) => `<i class="${i < ronda ? 'fet' : ''}"></i>`).join('')}</span>
       </div>
       <div class="zona-joc"></div>
-      <div class="indicador" hidden>👇</div>
     </main>`;
   app.querySelector('.boto-menu').addEventListener('click', pantallaFutbolMenu);
-  const main = app.querySelector('.futbol');
-  const zonaJoc = app.querySelector('.zona-joc');
-  const indicador = app.querySelector('.indicador');
-  const C = dibuixaCamp(zonaJoc, elTorn);
-  const assenyala = j => {
-    if (!j) { indicador.hidden = true; return; }
-    const p = C.aPantalla(j.x, j.y), r = main.getBoundingClientRect();
-    indicador.hidden = false;
-    indicador.style.transform = `translate(${p.x - r.left}px, ${p.y - r.top}px)`;
-  };
+  const zona = app.querySelector('.zona-joc');
   let acabat = false;
   const m = {
-    ...C, elTorn, vel, nivell, assenyala,
+    zona, elTorn, vel, nivell,
     viu: () => elTorn === torn && !acabat,
     async encert(frase) {
       if (acabat) return;
       acabat = true;
-      assenyala(null);
       So.encert();
       await Veu.diu(frase);
       if (elTorn !== torn) return;
@@ -1970,7 +1959,6 @@ function pantallaLateral(joc, ronda = 0, fallades = 0) {
     async fallo(frase) {
       if (acabat) return;
       acabat = true;
-      assenyala(null);
       await Veu.diu(frase);
       if (elTorn === torn) pantallaLateral(joc, ronda, fallades + 1);
     },
@@ -1978,208 +1966,247 @@ function pantallaLateral(joc, ronda = 0, fallades = 0) {
   ({ rebre: miniRebre, banda: miniBanda, pressio: miniPressio, pressiona: miniPressiona })[joc](m);
 }
 
-// Arrossegar un jugador amb el dit dins un minijoc.
-function arrossegable(m, j, quanMou) {
-  const { svg, aMon, dist, posa } = m;
-  const { L, A } = CAMP;
-  let agafat = null;
-  svg.addEventListener('pointerdown', e => {
-    if (!m.viu() || dist(j, aMon(e)) > 85) return;
-    svg.setPointerCapture(e.pointerId);
-    agafat = e.pointerId;
-    j.g.classList.add('agafat');
-    m.assenyala(null);
-  });
-  svg.addEventListener('pointermove', e => {
-    if (agafat !== e.pointerId || !m.viu()) return;
-    const p = aMon(e);
-    const abans = { x: j.x, y: j.y };
-    j.x = Math.max(20, Math.min(L - 20, p.x));
-    j.y = Math.max(-30, Math.min(A - 20, p.y));
-    posa(j);
-    quanMou(abans, j);
-  });
-  const deixa = e => { if (agafat === e.pointerId) { agafat = null; j.g.classList.remove('agafat'); } };
-  svg.addEventListener('pointerup', deixa);
-  svg.addEventListener('pointercancel', deixa);
-}
-
-// Distància d'un punt a un segment.
-const aSegment = (p, a, b) => {
-  const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2 || 1;
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2));
-  return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
-};
-
-/* 1. Rep la pilota: mirar abans de rebre i controlar cap a l'espai lliure. */
-function miniRebre(m) {
-  const { fesJugador, pilota, posa, mou, aMon, dist, capaZones, svg } = m;
-  const central = fesJugador('.blaus', '', 150, 300, 4);
-  const jo = fesJugador('.blaus', 'jo', 230, 80, 3);
-  const extrem = fesJugador('.blaus', '', 560, 60, 11);
-  const pivot = fesJugador('.blaus', '', 380, 360, 6);
-  const endavant = { x: 340, y: 60 }, dins = { x: 300, y: 220 };
-  const perDins = Math.random() < 0.5; // on és el contrari
-  fesJugador('.vermells', '', perDins ? 360 : 420, perDins ? 250 : 70, 7);
-  capaZones.innerHTML = `<circle class="opcio-zona" cx="${endavant.x}" cy="${endavant.y}" r="62"/><circle class="opcio-zona" cx="${dins.x}" cy="${dins.y}" r="62"/>`;
-  Object.assign(pilota, { x: central.x + 30, y: central.y }); posa(pilota);
-  repetir = () => Veu.diu("Mira on és el vermell. Toca on vols controlar la pilota, abans que t'arribi.");
-  let tria = null;
-  svg.addEventListener('pointerdown', e => {
-    if (!m.viu() || tria) return;
-    const p = aMon(e);
-    tria = dist(p, endavant) < 80 ? endavant : dist(p, dins) < 80 ? dins : null;
-    if (tria) capaZones.querySelectorAll('circle')[tria === endavant ? 0 : 1].classList.add('triada');
-  });
-  (async () => {
-    await Veu.diu('Mira on és el vermell! Toca cap a on controles.');
-    if (!m.viu()) return;
-    await mou(pilota, jo.x + 10, jo.y + 25, 1900 / m.vel);
-    if (!m.viu()) return;
-    if (!tria) return m.fallo("Decideix abans que t'arribi la pilota!");
-    const bo = perDins ? tria === endavant : tria === dins;
-    if (!bo) return m.fallo("Allà hi ha el contrari! Controla cap a l'espai lliure.");
-    await Promise.all([mou(jo, tria.x, tria.y, 450), mou(pilota, tria.x + 25, tria.y + 10, 450)]);
-    const company = tria === endavant ? extrem : pivot;
-    await mou(pilota, company.x, company.y, 450);
-    m.encert('Molt bé! Has mirat abans de rebre.');
-  })();
-}
-
-/* 2. Puja per la banda, en primera persona: ell corre vora la línia de banda,
-   li vénen contraris de cara i ha de buscar l'espai (normalment, la banda). */
-function miniBanda(m) {
-  const zona = m.svg.parentElement;
-  zona.innerHTML = `
-    <div class="pp">
-      <canvas class="pp-canvas"></canvas>
-      <button class="pp-fletxa esq" aria-label="Esquerra">⬅️</button>
-      <button class="pp-fletxa dre" aria-label="Dreta">➡️</button>
-      <button class="pp-centra" hidden>⚽ Centra!</button>
-    </div>`;
-  const canvas = zona.querySelector('canvas');
+/* Escena en primera persona: el nen veu el camp com si hi fos, mirant endavant (cap a la porteria contrària).
+   Coordenades en metres: x = distància a la línia de banda (0 = línia; positiu = cap a dins), z = endavant. */
+function escenaPP(zona, botons = '', { fov = 0.9 } = {}) {
+  zona.innerHTML = `<div class="pp"><canvas class="pp-canvas"></canvas>${botons}</div>`;
+  const pp = zona.querySelector('.pp');
+  const canvas = pp.querySelector('canvas');
   const ctx = canvas.getContext('2d');
-  const botoCentra = zona.querySelector('.pp-centra');
-  const CARRILS = [1.6, 4.6, 7.6]; // metres des de la línia de banda (0 = banda)
-  const ajuda = m.nivell === 0;
-  let carril = 1, x = CARRILS[1], camX = x; // comença una mica per dins
-  let recorregut = 0; // metres correguts
-  const velocitat = 7 * m.vel; // m/s
-  const onades = 3 + Math.min(3, Math.floor(m.vel * 1.5));
-  const rivals = [];
-  // Cada onada: 1 o 2 contraris de cara; gairebé sempre deixen lliure la banda.
-  for (let n = 0; n < onades; n++) {
-    const z = 30 + n * 26;
-    // Normalment et vénen de cara pel mig i l'espai és la banda; a vegades la banda està tapada i l'espai és per dins.
-    const bandaLliure = n === 0 || Math.random() < 0.85;
-    const ocupats = bandaLliure ? (Math.random() < 0.5 ? [1] : [1, 2]) : [0, 1];
-    ocupats.forEach(c => rivals.push({ z, x: CARRILS[c] + (Math.random() - 0.5) * 0.6, c, fase: Math.random() * 6 }));
-  }
-  const final = 30 + onades * 26;
-  let fase = 'corre', avisat = new Set(), t = 0;
-  const nou = { x: 26.5, z: 15 }; // el davanter a l'àrea
-  // Públic de la grada (punts fixos).
-  const public_ = Array.from({ length: 160 }, () => ({ u: Math.random(), v: Math.random(), c: aleatori(['#FF7A6B', '#FFBE3D', '#2EC4A6', '#8C7BFF', '#4AA8FF', '#FFFFFF', '#F06FB0']) }));
-
-  const mida = () => {
-    const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(r.width * dpr)) { canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); }
-    return { W: canvas.width, H: canvas.height };
+  const colors = ['#FF7A6B', '#FFBE3D', '#2EC4A6', '#8C7BFF', '#4AA8FF', '#FFFFFF', '#F06FB0'];
+  const public_ = Array.from({ length: 160 }, () => ({ u: Math.random(), v: Math.random(), c: aleatori(colors) }));
+  const E = { pp, canvas, ctx, cam: { x: 3, z: 0 }, t: 0, dpr: window.devicePixelRatio || 1 };
+  E.geo = () => {
+    const r = canvas.getBoundingClientRect();
+    if (canvas.width !== Math.round(r.width * E.dpr) || canvas.height !== Math.round(r.height * E.dpr)) {
+      canvas.width = Math.round(r.width * E.dpr); canvas.height = Math.round(r.height * E.dpr);
+    }
+    const W = canvas.width, H = canvas.height;
+    return { W, H, hor: H * 0.36, f: Math.min(W, H * 1.4) * fov, alt: 1.5 };
   };
-
-  function dibuixa() {
-    const { W, H } = mida();
-    const hor = H * 0.36, f = Math.min(W, H * 1.4) * 0.9, alt = 1.5;
-    const P = (px, z) => ({ x: W / 2 + (px - camX) * f / z, y: hor + alt * f / z });
-    // Cel i grada
+  let G = E.geo();
+  // Punt del món a la pantalla (y = alçada sobre la gespa).
+  E.P = (x, z, y = 0) => {
+    const zr = Math.max(0.3, z - E.cam.z);
+    return { x: G.W / 2 + (x - E.cam.x) * G.f / zr, y: G.hor + (G.alt - y) * G.f / zr, s: G.f / zr, zr };
+  };
+  // El mateix, en píxels de pantalla (per saber què s'ha tocat).
+  E.aPantalla = (x, z, y = 0) => { const p = E.P(x, z, y), r = canvas.getBoundingClientRect(); return { x: r.left + p.x / E.dpr, y: r.top + p.y / E.dpr, s: p.s / E.dpr }; };
+  E.quad = (pts, color) => { ctx.fillStyle = color; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath(); ctx.fill(); };
+  E.fons = () => {
+    G = E.geo();
+    const { W, H, hor, f } = G;
     const cel = ctx.createLinearGradient(0, 0, 0, hor);
     cel.addColorStop(0, '#8FCBFF'); cel.addColorStop(1, '#DDF0FF');
     ctx.fillStyle = cel; ctx.fillRect(0, 0, W, hor);
     ctx.fillStyle = '#5B6785'; ctx.fillRect(0, hor - H * 0.13, W, H * 0.13);
     for (const p of public_) { ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.u * W, hor - H * 0.12 + p.v * H * 0.1, Math.max(2, H * 0.006), 0, 7); ctx.fill(); }
-    // Gespa amb franges que s'acosten mentre corre
     ctx.fillStyle = '#46A262'; ctx.fillRect(0, hor, W, H - hor);
-    const pas = 5, despl = recorregut % (pas * 2);
+    const pas = 5, despl = ((E.cam.z % (pas * 2)) + pas * 2) % (pas * 2);
     for (let z = pas * 2 - despl; z < 120; z += pas * 2) {
-      const a = Math.max(0.6, z), b = z + pas;
-      const ya = hor + alt * f / a, yb = hor + alt * f / b;
+      const ya = G.hor + G.alt * f / Math.max(0.6, z), yb = G.hor + G.alt * f / (z + pas);
       ctx.fillStyle = '#4FB06C'; ctx.fillRect(0, yb, W, ya - yb);
     }
-    // Fora del camp (a l'esquerra de la línia): pista i tanca
-    const quad = (pts, color) => { ctx.fillStyle = color; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath(); ctx.fill(); };
-    const n1 = P(0, 0.6), n2 = P(0, 150), e1 = P(-30, 0.6), e2 = P(-30, 150);
-    quad([n1, n2, e2, e1], '#C9B38A');
-    // Tanca baixa (sense anuncis) una mica més enllà de la línia.
-    const a = P(-7, 6), b = P(-7, 150), ha = 0.8 * f / 6, hb = 0.8 * f / 150;
-    quad([a, b, { x: b.x, y: b.y - hb }, { x: a.x, y: a.y - ha }], '#3B6FD8');
-    // Línia de banda
-    const l1 = P(-0.06, 0.6), l2 = P(-0.06, 150), l3 = P(0.06, 150), l4 = P(0.06, 0.6);
-    quad([l1, l2, l3, l4], '#FFFFFF');
-    // Ajuda: carril lliure il·luminat
-    if (ajuda && fase === 'corre') {
-      const prop = rivals.filter(r => r.z - recorregut > 3 && r.z - recorregut < 28);
-      if (prop.length) {
-        const lliure = [0, 1, 2].find(c => !prop.some(r => r.c === c));
-        if (lliure !== undefined && lliure !== carril) {
-          const zA = Math.max(1, prop[0].z - recorregut - 6), zB = prop[0].z - recorregut + 3;
-          const cx = CARRILS[lliure];
-          quad([P(cx - 1.3, zA), P(cx - 1.3, zB), P(cx + 1.3, zB), P(cx + 1.3, zA)], 'rgba(255, 226, 154, 0.55)');
-        }
-      }
-    }
-    // Àrea i porteria al final
-    const zArea = final - recorregut;
-    if (zArea < 120) {
-      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(2, W * 0.003);
-      const linia = (ax, az, bx, bz) => { if (az < 0.7 || bz < 0.7) return; const a = P(ax, az), b = P(bx, bz); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
-      linia(13, zArea, 40, zArea); linia(13, zArea, 13, zArea + 16); linia(40, zArea, 40, zArea + 16);
-      linia(0, zArea + 16, 60, zArea + 16);
-      if (zArea + 16 > 1) {
-        const pa = P(23, zArea + 16), pb = P(30.3, zArea + 16), h = 2.44 * f / (zArea + 16);
-        ctx.lineWidth = Math.max(3, W * 0.006);
-        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x, pa.y - h); ctx.lineTo(pb.x, pb.y - h); ctx.lineTo(pb.x, pb.y); ctx.stroke();
-      }
-    }
-    // Jugadors (els de lluny primer)
-    const figures = rivals.map(r => ({ ...r, zr: r.z - recorregut, color: '#E5484D' })).filter(r => r.zr > 0.8);
-    if (fase !== 'corre') figures.push({ x: nou.x, zr: nou.z, color: '#2F6FED', fase: t * 3, num: 9 });
-    figures.sort((a, b) => b.zr - a.zr).forEach(r => jugador(P, f, r));
-    if (fase === 'centra') {
-      const c = P(26.5, nou.z), rx = 2.2 * f / nou.z, ry = rx * 0.25;
-      ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = Math.max(3, W * 0.005); ctx.setLineDash([12, 8]);
-      ctx.beginPath(); ctx.ellipse(c.x, c.y, rx, ry, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-    }
-    // La meva pilota, a baix
-    if (fase === 'xut' || fase === 'fi') return;
-    const bota = Math.abs(Math.sin(t * 9)) * H * 0.012;
-    const rp = Math.min(W, H) * 0.05;
-    const pb = { x: W / 2 + (x - camX) * W * 0.08, y: H - rp * 2.2 };
-    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(pb.x, pb.y + rp * 0.9, rp, rp * 0.3, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#2B2D42'; ctx.lineWidth = rp * 0.08;
-    ctx.beginPath(); ctx.arc(pb.x, pb.y - bota, rp, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#2B2D42'; ctx.beginPath();
-    for (let i = 0; i < 5; i++) { const a = t * 6 + i * 1.2566; const px = pb.x + Math.cos(a) * rp * 0.35, py = pb.y - bota + Math.sin(a) * rp * 0.35; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
-    ctx.fill();
-  }
-
-  // Un jugador dibuixat en perspectiva (alçada 1,8 m).
-  function jugador(P, f, r) {
-    const peu = P(r.x, r.zr), s = f / r.zr, h = 1.8 * s;
-    const cama = Math.sin((r.fase || 0) + t * 10) * h * 0.06;
+    const z0 = E.cam.z + 0.6, z1 = E.cam.z + 150;
+    E.quad([E.P(0, z0), E.P(0, z1), E.P(-40, z1), E.P(-40, z0)], '#C9B38A');
+    const a = E.P(-7, E.cam.z + 6), b = E.P(-7, z1);
+    E.quad([a, b, { x: b.x, y: b.y - 0.8 * b.s }, { x: a.x, y: a.y - 0.8 * a.s }], '#3B6FD8');
+    E.quad([E.P(-0.06, z0), E.P(-0.06, z1), E.P(0.06, z1), E.P(0.06, z0)], '#FFFFFF');
+  };
+  // Taca o fletxa a terra (per ajudar).
+  E.taca = (x, z, r, color) => { const p = E.P(x, z); if (p.zr < 0.5) return; ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(p.x, p.y, r * p.s, r * p.s * 0.3, 0, 0, 7); ctx.fill(); };
+  E.fletxa = (x1, z1, x2, z2, color, ample = 0.7) => {
+    const dx = x2 - x1, dz = z2 - z1, l = Math.hypot(dx, dz), nx = -dz / l * ample, nz = dx / l * ample;
+    const bx = x2 - dx / l * 1.4, bz = z2 - dz / l * 1.4;
+    E.quad([E.P(x1 + nx * 0.5, z1 + nz * 0.5), E.P(bx + nx * 0.5, bz + nz * 0.5), E.P(bx + nx, bz + nz), E.P(x2, z2), E.P(bx - nx, bz - nz), E.P(bx - nx * 0.5, bz - nz * 0.5), E.P(x1 - nx * 0.5, z1 - nz * 0.5)], color);
+  };
+  // Un jugador de 1,8 m. fig: { x, z, color, num, anell, corre }
+  E.jugador = fig => {
+    const peu = E.P(fig.x, fig.z);
+    if (peu.zr < 0.8) return;
+    const h = 1.8 * peu.s, cama = fig.corre === false ? 0 : Math.sin((fig.fase || 0) + E.t * 10) * h * 0.06;
+    if (fig.anell) { ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = h * 0.04; ctx.beginPath(); ctx.ellipse(peu.x, peu.y, h * 0.3, h * 0.08, 0, 0, 7); ctx.stroke(); }
     ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(peu.x, peu.y, h * 0.2, h * 0.05, 0, 0, 7); ctx.fill();
     ctx.strokeStyle = '#2B2D42'; ctx.lineCap = 'round'; ctx.lineWidth = h * 0.07;
     ctx.beginPath(); ctx.moveTo(peu.x - h * 0.06, peu.y - h * 0.45); ctx.lineTo(peu.x - h * 0.07 + cama, peu.y);
     ctx.moveTo(peu.x + h * 0.06, peu.y - h * 0.45); ctx.lineTo(peu.x + h * 0.07 - cama, peu.y); ctx.stroke();
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(peu.x - h * 0.13, peu.y - h * 0.52, h * 0.26, h * 0.12);
-    ctx.fillStyle = r.color;
+    ctx.fillStyle = fig.color;
     ctx.beginPath(); ctx.roundRect(peu.x - h * 0.15, peu.y - h * 0.82, h * 0.3, h * 0.33, h * 0.06); ctx.fill();
     ctx.strokeStyle = '#F2C7A5'; ctx.lineWidth = h * 0.055;
     ctx.beginPath(); ctx.moveTo(peu.x - h * 0.15, peu.y - h * 0.78); ctx.lineTo(peu.x - h * 0.24 - cama * 0.5, peu.y - h * 0.58);
     ctx.moveTo(peu.x + h * 0.15, peu.y - h * 0.78); ctx.lineTo(peu.x + h * 0.24 + cama * 0.5, peu.y - h * 0.58); ctx.stroke();
     ctx.fillStyle = '#F2C7A5'; ctx.beginPath(); ctx.arc(peu.x, peu.y - h * 0.9, h * 0.09, 0, 7); ctx.fill();
     ctx.fillStyle = '#5A3A22'; ctx.beginPath(); ctx.arc(peu.x, peu.y - h * 0.93, h * 0.09, Math.PI, 0); ctx.fill();
-    if (r.num) { ctx.fillStyle = '#fff'; ctx.font = `800 ${h * 0.15}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.num, peu.x, peu.y - h * 0.66); }
+    if (fig.num) { ctx.fillStyle = '#fff'; ctx.font = `800 ${h * 0.15}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(fig.num, peu.x, peu.y - h * 0.66); }
+  };
+  const dibuixaPilota = (cx, cy, rp, gir) => {
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#2B2D42'; ctx.lineWidth = Math.max(1, rp * 0.08);
+    ctx.beginPath(); ctx.arc(cx, cy, rp, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#2B2D42'; ctx.beginPath();
+    for (let i = 0; i < 5; i++) { const a = gir + i * 1.2566, px = cx + Math.cos(a) * rp * 0.35, py = cy + Math.sin(a) * rp * 0.35; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.fill();
+  };
+  // Pilota en un punt del camp.
+  E.pilota = (x, z, y = 0) => {
+    const p = E.P(x, z, y + 0.11), terra = E.P(x, z);
+    if (p.zr < 0.5) return;
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(terra.x, terra.y, 0.14 * terra.s, 0.04 * terra.s, 0, 0, 7); ctx.fill();
+    dibuixaPilota(p.x, p.y, Math.max(3, 0.11 * p.s), E.t * 6);
+  };
+  // La meva pilota, als peus (a baix de la pantalla).
+  E.mevaPilota = (desplX = 0) => {
+    const rp = Math.min(G.W, G.H) * 0.05, bota = Math.abs(Math.sin(E.t * 9)) * G.H * 0.012;
+    const cx = G.W / 2 + desplX * G.W * 0.08, cy = G.H - rp * 2.2;
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(cx, cy + rp * 0.9, rp, rp * 0.3, 0, 0, 7); ctx.fill();
+    dibuixaPilota(cx, cy - bota, rp, E.t * 6);
+  };
+  // Dibuixa tot: fons, coses a terra, jugadors (els de lluny primer) i coses al damunt.
+  E.dibuixa = ({ terra = () => {}, figures = [], sobre = () => {} } = {}) => {
+    E.fons();
+    terra();
+    [...figures].sort((a, b) => b.z - a.z).forEach(E.jugador);
+    sobre();
+  };
+  // Què s'ha tocat: el jugador més a prop del dit.
+  E.tocat = (e, figures) => {
+    let millor = null, d = Infinity;
+    for (const fig of figures) {
+      const p = E.aPantalla(fig.x, fig.z, 0.9), dd = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+      if (dd < Math.max(45, p.s * 1.3) && dd < d) { d = dd; millor = fig; }
+    }
+    return millor;
+  };
+  // Anima un valor (o diversos) durant ms.
+  E.anima = (ms, f) => new Promise(r => {
+    const t0 = performance.now();
+    const pas = ara => { const t = Math.min(1, (ara - t0) / ms); f(t); t < 1 ? requestAnimationFrame(pas) : r(); };
+    requestAnimationFrame(pas);
+  });
+  return E;
+}
+
+const BLAU = '#2F6FED', VERMELL = '#E5484D';
+
+/* 1. Rep la pilota: el central te la passa; abans que arribi, mira on és el contrari i tria cap a on controles. */
+function miniRebre(m) {
+  const E = escenaPP(m.zona, `
+    <button class="pp-fletxa esq" data-dir="endavant" aria-label="Endavant">⬆️</button>
+    <button class="pp-fletxa dre" data-dir="dins" aria-label="Cap a dins">➡️</button>`, { fov: 0.8 });
+  E.cam = { x: 3, z: 0 };
+  const perDins = Math.random() < 0.5; // on és el contrari
+  const central = { x: 7.6, z: 10, color: BLAU, num: 4, corre: false };
+  const pivot = { x: 7, z: 16, color: BLAU, num: 6, corre: false };
+  const extrem = { x: 2.2, z: 22, color: BLAU, num: 11, corre: false };
+  const rival = perDins ? { x: 4.6, z: 4.6, color: VERMELL, num: 7 } : { x: 2.8, z: 9, color: VERMELL, num: 7 };
+  const figures = [central, pivot, extrem, rival];
+  const pil = { x: central.x - 0.5, z: central.z - 0.3, y: 0, meva: false };
+  let tria = null, fase = 've';
+  E.pp.querySelectorAll('[data-dir]').forEach(b => b.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (fase !== 've' || tria) return;
+    tria = b.dataset.dir;
+    b.classList.add('triada');
+  }));
+  const dibuixa = () => E.dibuixa({
+    figures,
+    terra: () => {
+      if (fase === 've') {
+        E.fletxa(2.6, 2.6, 2.6, 6.5, tria === 'endavant' ? 'rgba(255,210,63,0.85)' : 'rgba(255,255,255,0.5)', 0.5);
+        E.fletxa(3.4, 3, 5.4, 4.2, tria === 'dins' ? 'rgba(255,210,63,0.85)' : 'rgba(255,255,255,0.5)', 0.5);
+      }
+    },
+    sobre: () => { if (pil.meva) E.mevaPilota(); else E.pilota(pil.x, pil.z, pil.y); },
+  });
+  (async () => {
+    repetir = () => Veu.diu("Mira on és el vermell! Abans que t'arribi la pilota, toca cap a on la controles.");
+    Veu.diu('Mira on és el vermell! Cap a on controles?');
+    let viu = true;
+    const roda = ara => { if (!m.viu() || !viu) return; E.t = ara / 1000; dibuixa(); requestAnimationFrame(roda); };
+    requestAnimationFrame(roda);
+    await espera(700);
+    if (!m.viu()) return;
+    const x0 = pil.x, z0 = pil.z;
+    await E.anima(2300 / m.vel, t => { pil.x = x0 + (3 - x0) * t; pil.z = z0 + (1.3 - z0) * t; });
+    if (!m.viu()) return;
+    fase = 'controla';
+    if (!tria) { viu = false; return m.fallo("Decideix abans que t'arribi la pilota!"); }
+    const bo = perDins ? tria === 'endavant' : tria === 'dins';
+    if (!bo) {
+      await E.anima(500, t => { rival.x += ((tria === 'endavant' ? 3 : 4.5) - rival.x) * t * 0.3; rival.z += ((tria === 'endavant' ? 4 : 3) - rival.z) * t * 0.3; });
+      viu = false;
+      return m.fallo("Allà hi ha el contrari! Controla cap a l'espai lliure.");
+    }
+    pil.meva = true;
+    const cx = E.cam.x, cz = E.cam.z;
+    await E.anima(650, t => { if (tria === 'endavant') E.cam.z = cz + 4 * t; else { E.cam.x = cx + 2 * t; E.cam.z = cz + 1.5 * t; } });
+    const company = tria === 'endavant' ? extrem : pivot;
+    pil.meva = false; pil.x = E.cam.x; pil.z = E.cam.z + 5;
+    const px = pil.x, pz = pil.z;
+    await E.anima(600, t => { pil.x = px + (company.x - px) * t; pil.z = pz + (company.z - pz) * t; pil.y = Math.sin(t * Math.PI) * 0.6; });
+    viu = false;
+    m.encert('Molt bé! Has mirat abans de rebre.');
+  })();
+}
+
+/* 2. Puja per la banda: corre vora la línia, et vénen contraris de cara i has de buscar l'espai. */
+function miniBanda(m) {
+  const E = escenaPP(m.zona, `
+    <button class="pp-fletxa esq" aria-label="Esquerra">⬅️</button>
+    <button class="pp-fletxa dre" aria-label="Dreta">➡️</button>
+    <button class="pp-centra" hidden>⚽ Centra!</button>`);
+  const botoCentra = E.pp.querySelector('.pp-centra');
+  const CARRILS = [1.6, 4.6, 7.6]; // metres des de la línia de banda
+  const ajuda = m.nivell === 0;
+  let carril = 1, x = CARRILS[1];
+  E.cam = { x, z: 0 };
+  const velocitat = 7 * m.vel;
+  const onades = 3 + Math.min(3, Math.floor(m.vel * 1.5));
+  const rivals = [];
+  for (let n = 0; n < onades; n++) {
+    const z = 30 + n * 26;
+    // Normalment et vénen de cara pel mig i l'espai és la banda; a vegades la banda està tapada i l'espai és per dins.
+    const bandaLliure = n === 0 || Math.random() < 0.85;
+    const ocupats = bandaLliure ? (Math.random() < 0.5 ? [1] : [1, 2]) : [0, 1];
+    ocupats.forEach(c => rivals.push({ z, x: CARRILS[c] + (Math.random() - 0.5) * 0.6, c, fase: Math.random() * 6, color: VERMELL }));
   }
+  const final = 30 + onades * 26;
+  const nou = { x: 26.5, z: 0, color: BLAU, num: 9 };
+  let fase = 'corre', avisat = new Set();
+
+  const dibuixa = () => E.dibuixa({
+    figures: fase === 'corre' ? rivals : [...rivals, nou],
+    terra: () => {
+      if (ajuda && fase === 'corre') {
+        const prop = rivals.filter(r => r.z - E.cam.z > 3 && r.z - E.cam.z < 28);
+        if (prop.length) {
+          const lliure = [0, 1, 2].find(c => !prop.some(r => r.c === c));
+          if (lliure !== undefined && lliure !== carril) {
+            const cx = CARRILS[lliure], zA = Math.max(E.cam.z + 1, prop[0].z - 6), zB = prop[0].z + 3;
+            E.quad([E.P(cx - 1.3, zA), E.P(cx - 1.3, zB), E.P(cx + 1.3, zB), E.P(cx + 1.3, zA)], 'rgba(255, 226, 154, 0.55)');
+          }
+        }
+      }
+      // L'àrea i la porteria del final
+      const ctx = E.ctx, zA = final;
+      if (zA - E.cam.z < 120) {
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(2, E.canvas.width * 0.003);
+        const linia = (ax, az, bx, bz) => { if (az - E.cam.z < 0.7 || bz - E.cam.z < 0.7) return; const a = E.P(ax, az), b = E.P(bx, bz); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
+        linia(13, zA, 40, zA); linia(13, zA, 13, zA + 16); linia(40, zA, 40, zA + 16); linia(0, zA + 16, 60, zA + 16);
+        const pa = E.P(23, zA + 16), pb = E.P(30.3, zA + 16);
+        if (pa.zr > 1) {
+          ctx.lineWidth = Math.max(3, E.canvas.width * 0.006);
+          ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x, pa.y - 2.44 * pa.s); ctx.lineTo(pb.x, pb.y - 2.44 * pb.s); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+        }
+      }
+      if (fase === 'centra') {
+        const c = E.P(26.5, nou.z), ctx2 = E.ctx;
+        ctx2.strokeStyle = '#FFD23F'; ctx2.lineWidth = Math.max(3, E.canvas.width * 0.005); ctx2.setLineDash([12, 8]);
+        ctx2.beginPath(); ctx2.ellipse(c.x, c.y, 2.2 * c.s, 0.55 * c.s, 0, 0, 7); ctx2.stroke(); ctx2.setLineDash([]);
+      }
+    },
+    sobre: () => { if (fase === 'corre' || fase === 'centra') E.mevaPilota(x - E.cam.x); },
+  });
 
   const canvia = d => {
     if (fase !== 'corre' || !m.viu()) return;
@@ -2187,21 +2214,19 @@ function miniBanda(m) {
     if (carril + d > 2) return;
     carril += d;
   };
-  zona.querySelector('.esq').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(-1); });
-  zona.querySelector('.dre').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(1); });
-  canvas.addEventListener('pointerdown', e => {
+  E.pp.querySelector('.esq').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(-1); });
+  E.pp.querySelector('.dre').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(1); });
+  E.canvas.addEventListener('pointerdown', e => {
     if (fase === 'centra') return centra();
-    const r = canvas.getBoundingClientRect();
+    const r = E.canvas.getBoundingClientRect();
     canvia(e.clientX - r.left < r.width / 2 ? -1 : 1);
   });
   botoCentra.addEventListener('pointerdown', e => { e.stopPropagation(); centra(); });
-
-  async function centra() {
+  function centra() {
     if (fase !== 'centra' || !m.viu()) return;
     fase = 'xut';
     botoCentra.hidden = true;
-    const bo = Math.abs(nou.x - 26.5) < 2.2;
-    if (!bo) return m.fallo("Ara no! Espera que el nou sigui al cercle.");
+    if (Math.abs(nou.x - 26.5) >= 2.2) return m.fallo("Ara no! Espera que el nou sigui al cercle.");
     m.encert('Gol! Quina centrada!');
   }
 
@@ -2210,31 +2235,32 @@ function miniBanda(m) {
     if (!m.viu()) return;
     const dt = Math.min(0.05, (ara - abans) / 1000);
     abans = ara;
-    t += dt;
+    E.t += dt;
     x += (CARRILS[carril] - x) * Math.min(1, dt * 10);
     // A l'hora de centrar, mira cap a l'àrea.
     const mira = fase === 'corre' ? x : 22;
-    camX += (mira - camX) * Math.min(1, dt * (fase === 'corre' ? 6 : 2.5));
+    E.cam.x += (mira - E.cam.x) * Math.min(1, dt * (fase === 'corre' ? 6 : 2.5));
     if (fase === 'corre') {
-      recorregut += velocitat * dt;
+      E.cam.z += velocitat * dt;
       for (const r of rivals) {
         r.z -= 1.5 * dt; // també vénen cap a tu
-        const zr = r.z - recorregut;
+        const zr = r.z - E.cam.z;
         if (zr < 1.6 && zr > 0.4 && Math.abs(r.x - x) < 1.3) { fase = 'fi'; dibuixa(); return m.fallo("T'ha pres la pilota! Busca l'espai lliure."); }
         if (ajuda && zr < 22 && zr > 10 && !avisat.has(r) && Math.abs(r.x - x) < 1.3) {
           avisat.add(r);
           const lliure = [0, 1, 2].find(c => !rivals.some(o => Math.abs(o.z - r.z) < 4 && o.c === c));
-          Veu.diu(lliure === 0 ? 'Espai per la banda!' : 'Busca l\'espai!');
+          Veu.diu(lliure === 0 ? 'Espai per la banda!' : "Busca l'espai!");
         }
       }
-      if (recorregut > final - 14) {
+      if (E.cam.z > final - 14) {
         fase = 'centra';
+        nou.z = E.cam.z + 15;
         botoCentra.hidden = false;
-        zona.querySelectorAll('.pp-fletxa').forEach(b => { b.hidden = true; });
+        E.pp.querySelectorAll('.pp-fletxa').forEach(b => { b.hidden = true; });
         Veu.diu('Centra! Toca quan el nou sigui al cercle.');
       }
     }
-    if (fase === 'centra') nou.x = 26.5 + Math.sin(t * 2 * m.vel) * 5;
+    if (fase === 'centra') nou.x = 26.5 + Math.sin(E.t * 2 * m.vel) * 5;
     dibuixa();
     requestAnimationFrame(roda);
   }
@@ -2243,79 +2269,103 @@ function miniBanda(m) {
   requestAnimationFrame(roda);
 }
 
-/* 3. Et pressionen: passar-la ràpid a un company lliure. */
+/* 3. Et pressionen: un contrari corre cap a tu; passa-la ràpid a un company que estigui sol. */
 function miniPressio(m) {
-  const { fesJugador, pilota, posa, mou, aMon, dist, svg } = m;
-  const jo = fesJugador('.blaus', 'jo', 110, 70, 3);
-  const companys = [fesJugador('.blaus', 'company', 150, 320, 4), fesJugador('.blaus', 'company', 360, 300, 6), fesJugador('.blaus', 'company', 430, 70, 11)];
+  const E = escenaPP(m.zona, '', { fov: 0.8 });
+  E.cam = { x: 4, z: 0 };
+  const companys = [
+    { x: 6.6, z: 6, color: BLAU, num: 4, corre: false },
+    { x: 6.2, z: 12, color: BLAU, num: 6, corre: false },
+    { x: 2, z: 14, color: BLAU, num: 11, corre: false },
+  ];
   const marcats = barreja(companys).slice(0, 1 + Math.floor(Math.random() * 2));
-  const marcadors = marcats.map(c => ({ c, r: fesJugador('.vermells', '', c.x + 40, c.y - 30, '') }));
-  const pressor = fesJugador('.vermells', '', 380, 170, 9);
-  Object.assign(pilota, { x: jo.x + 28, y: jo.y + 14 }); posa(pilota);
-  repetir = () => Veu.diu('Et pressionen! Passa-la ràpid a un company que estigui sol.');
+  const marcadors = marcats.map(c => ({ c, r: { x: c.x - 0.9, z: c.z - 1, color: VERMELL, corre: false } }));
+  const pressor = { x: 4.4, z: 11, color: VERMELL, num: 9 };
+  const figures = [...companys, ...marcadors.map(x => x.r), pressor];
+  const pil = { x: 4, z: 1.5, y: 0, meva: true };
   let fet = false;
-  svg.addEventListener('pointerdown', async e => {
+  const dibuixa = () => E.dibuixa({ figures, sobre: () => { if (pil.meva) E.mevaPilota(); else E.pilota(pil.x, pil.z, pil.y); } });
+  const roda = ara => { if (!m.viu()) return; E.t = ara / 1000; dibuixa(); requestAnimationFrame(roda); };
+  requestAnimationFrame(roda);
+  const passa = async a => { pil.meva = false; await E.anima(450, t => { pil.x = 4 + (a.x - 4) * t; pil.z = 1.5 + (a.z - 1.5) * t; pil.y = Math.sin(t * Math.PI) * 0.4; }); };
+  E.canvas.addEventListener('pointerdown', async e => {
     if (!m.viu() || fet) return;
-    const p = aMon(e);
-    const c = companys.find(c => dist(c, p) < 65);
+    const c = E.tocat(e, companys);
     if (!c) return;
     fet = true;
     const marcador = marcadors.find(x => x.c === c);
-    if (marcador) {
-      await mou(pilota, marcador.r.x, marcador.r.y, 420);
-      return m.fallo("Estava marcat! Busca el que està sol.");
-    }
-    await mou(pilota, c.x, c.y, 420);
+    if (marcador) { await passa(marcador.r); return m.fallo('Estava marcat! Busca el que està sol.'); }
+    await passa(c);
     m.encert('Molt bé! Passada ràpida.');
   });
+  repetir = () => Veu.diu('Et pressionen! Toca ràpid un company que estigui sol.');
   Veu.diu('Et pressionen! Passa-la ràpid!');
   (async () => {
     await espera(500);
     if (!m.viu()) return;
-    await mou(pressor, jo.x + 45, jo.y + 20, 2700 / m.vel);
+    const x0 = pressor.x, z0 = pressor.z;
+    await E.anima(2800 / m.vel, t => { if (!fet) { pressor.x = x0 + (4.1 - x0) * t; pressor.z = z0 + (2.2 - z0) * t; } });
     if (m.viu() && !fet) { fet = true; m.fallo("T'ha pres la pilota! Passa-la més ràpid."); }
   })();
 }
 
-/* 4. Pressiona: treure la pilota a l'extrem tancant-lo per dins. */
+/* 4. Pressiona: l'extrem ve de cara amb la pilota; posa't una mica per dins per robar-la. */
 function miniPressiona(m) {
-  const { fesJugador, pilota, posa, dist, capaZones } = m;
-  const rival = fesJugador('.vermells', '', 760, 70, 7);
-  const jo = fesJugador('.blaus', 'jo', 300, 280, 3);
-  fesJugador('.blaus', '', 140, 330, 4);
+  const E = escenaPP(m.zona, `
+    <button class="pp-fletxa esq" aria-label="Cap a la banda">⬅️</button>
+    <button class="pp-fletxa dre" aria-label="Cap a dins">➡️</button>`, { fov: 0.8 });
+  let x = 6;
+  E.cam = { x, z: 0 };
   const ajuda = m.nivell === 0;
-  if (ajuda) capaZones.innerHTML = '<circle class="opcio-zona" r="48"/>';
-  const cercleAjuda = capaZones.querySelector('circle');
-  const enganxa = () => { pilota.x = rival.x - 28; pilota.y = rival.y + 12; posa(pilota); };
-  enganxa();
-  repetir = () => Veu.diu("Pressiona! Treu-li la pilota, però tanca'l per dins: posa't entre ell i el mig del camp.");
-  let robat = false;
-  arrossegable(m, jo, () => {});
-  if (ajuda) m.assenyala(jo);
-  let abans = performance.now(), t = 0;
-  const roda = async ara => {
-    if (!m.viu() || robat) return;
-    const dt = (ara - abans) / 1000;
+  const rival = { x: 2.5, z: 28, color: VERMELL, num: 7 };
+  let mou = 0, robat = false;
+  const prem = (b, d) => {
+    b.addEventListener('pointerdown', e => { e.stopPropagation(); mou = d; });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { if (mou === d) mou = 0; }));
+  };
+  prem(E.pp.querySelector('.esq'), -1);
+  prem(E.pp.querySelector('.dre'), 1);
+  // També es pot arrossegar el dit.
+  let dit = null;
+  E.canvas.addEventListener('pointerdown', e => { dit = e.clientX; E.canvas.setPointerCapture(e.pointerId); });
+  E.canvas.addEventListener('pointermove', e => {
+    if (dit === null) return;
+    x = Math.max(0.5, Math.min(14, x + (e.clientX - dit) / E.canvas.getBoundingClientRect().width * 12));
+    dit = e.clientX;
+  });
+  E.canvas.addEventListener('pointerup', () => { dit = null; });
+  const dibuixa = () => E.dibuixa({
+    figures: [rival],
+    terra: () => { if (ajuda && !robat) E.taca(rival.x + 1.6, Math.max(E.cam.z + 2.5, rival.z - 2), 0.9, 'rgba(255, 226, 154, 0.65)'); },
+    sobre: () => { if (robat === 'meva') E.mevaPilota(); else E.pilota(rival.x - 0.3, rival.z - 0.5); },
+  });
+  let abans = performance.now();
+  const roda = ara => {
+    if (!m.viu() || robat) { if (robat === 'meva') { E.t = ara / 1000; dibuixa(); requestAnimationFrame(roda); } return; }
+    const dt = Math.min(0.05, (ara - abans) / 1000);
     abans = ara;
-    t += dt;
-    rival.x -= 95 * m.vel * dt;
-    rival.y = 75 + Math.sin(t * 2) * 25;
-    posa(rival); enganxa();
-    if (ajuda) { cercleAjuda.setAttribute('cx', rival.x - 40); cercleAjuda.setAttribute('cy', rival.y + 80); }
-    if (dist(jo, rival) < 62) {
-      robat = true;
-      if (jo.y > rival.y + 15) {
-        pilota.x = jo.x + 20; pilota.y = jo.y; posa(pilota);
+    E.t += dt;
+    x = Math.max(0.5, Math.min(14, x + mou * 4.5 * dt));
+    E.cam.x += (x - E.cam.x) * Math.min(1, dt * 8);
+    rival.z -= 4.2 * m.vel * dt;
+    rival.x = 2.6 + Math.sin(E.t * 1.4) * 1.1;
+    dibuixa();
+    if (rival.z - E.cam.z < 2.2) {
+      const dx = x - rival.x;
+      if (dx > 0.5 && dx < 3) {
+        robat = 'meva';
+        requestAnimationFrame(roda);
         return m.encert("Robada! L'has tancat per dins.");
       }
-      await Promise.all([m.mou(rival, rival.x - 140, rival.y + 210, 600), m.mou(pilota, rival.x - 170, rival.y + 220, 600)]);
-      return m.fallo("Per fora no! Tanca-li el camí de dins.");
+      robat = true;
+      if (dx >= 3) return m.fallo("Massa lluny! Acosta't a ell, una mica per dins.");
+      return m.fallo('Per fora no! Tanca-li el camí de dins.');
     }
-    if (rival.x < 170) { robat = true; return m.fallo("S'ha escapat! Surt a pressionar abans."); }
     requestAnimationFrame(roda);
   };
-  Veu.diu('Pressiona! Tanca-li el camí de dins.');
-  setTimeout(() => requestAnimationFrame(ara => { abans = ara; roda(ara); }), 700);
+  repetir = () => Veu.diu("Pressiona! Posa't una mica per dins del contrari per robar-li la pilota.");
+  Veu.diu("Pressiona! Tanca'l per dins.");
+  setTimeout(() => requestAnimationFrame(ara => { abans = ara; roda(ara); }), 600);
 }
 
 /* ---------- Mode adult ---------- */

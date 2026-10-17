@@ -22,7 +22,7 @@
 - [ ] Futbol: si ara s'entén amb la demostració, si el xut de 3 tocs és massa difícil, i si arrossegar els jugadors és fàcil.
 
 ## Per provar (versió 12)
-- [ ] Minijocs del lateral esquerre: si són divertits, si van massa ràpid o massa lent, i si s'entén què cal fer.
+- [ ] Minijocs del lateral esquerre en primera persona: si són divertits, si van massa ràpid o massa lent, i si s'entén què cal fer.
 
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).

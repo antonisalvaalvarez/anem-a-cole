@@ -475,6 +475,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .pp-fletxa { position: absolute; bottom: 3vmin; width: 18vmin; height: 15vmin; border-radius: 4vmin; background: rgba(255,255,255,0.85); font-size: 9vmin; box-shadow: var(--ombra); }
 .pp-fletxa.esq { left: 3vmin; }
 .pp-fletxa.dre { right: 3vmin; }
+.pp-fletxa.triada { background: var(--sol); scale: 1.1; }
 .pp-centra { position: absolute; left: 50%; bottom: 4vmin; translate: -50% 0; font-size: 5vmin; font-weight: 800; background: var(--sol); border-radius: 99px; padding: 2vmin 5vmin; box-shadow: var(--ombra); animation: batec 1.2s ease-in-out infinite; }
 .tapa-demo { position: absolute; inset: 0; z-index: 4; }
 .boto-ara-jo { position: relative; z-index: 6; font-size: 3.6vmin; font-weight: 800; color: var(--blanc); background: var(--verd); border-radius: 99px; padding: 1.4vmin 3vmin; animation: batec 1.4s ease-in-out infinite; }
