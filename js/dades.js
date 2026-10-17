@@ -141,7 +141,7 @@ const FRASES = {
   menu: {
     lletres: 'Lletres', sillabes: 'Síl·labes', paraules: 'Paraules',
     numeros: 'Números', compta: 'Compta', uneix: 'Uneix els números',
-    globus: 'Globus', parelles: 'Parelles', laberint: 'Laberint', futbol: 'Futbol', premis: 'Els meus premis',
+    globus: 'Globus', parelles: 'Parelles', laberint: 'Laberint', futbol: 'Futbol', lateral: 'Lateral esquerre', premis: 'Els meus premis',
   },
   // Curtes, perquè el joc vagi ràpid.
   encert: ['Molt bé!', 'Genial!', 'Bravo!', 'Sí!', 'Fantàstic!'],

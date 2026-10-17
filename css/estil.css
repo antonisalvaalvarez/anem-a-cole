@@ -457,6 +457,19 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 }
 .retol-emoji { font-size: 5vmin; }
 .retol .etiqueta { font-size: 3vmin; color: var(--lila); font-weight: 700; padding: 0 2vmin; }
+.menu-futbol { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 3vmin; padding: 3vmin 5vmin 5vmin; max-width: 150vmin; width: 100%; margin: 0 auto; }
+.menu-futbol .gran { grid-column: 1 / -1; }
+@media (orientation: landscape) { .menu-futbol { grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr 1fr; } }
+.menu-futbol .targeta .dibuix { font-size: 12vmin; }
+.menu-futbol .targeta .nom { font-size: 4vmin; text-align: center; padding: 0 1vmin; }
+.t-lateral { background: #2F6FED; }
+.boto-menu { font-size: 4vmin; font-weight: 800; width: 7vmin; height: 7vmin; border-radius: 50%; background: #F4EFE7; }
+.punts { display: flex; gap: 1vmin; padding: 0 2vmin; }
+.punts i { width: 3vmin; height: 3vmin; border-radius: 50%; background: #E9E2D6; }
+.punts i.fet { background: var(--verd); }
+.camp .zones .carril { fill: none; stroke: rgba(255,255,255,0.7); stroke-width: 6; stroke-dasharray: 20 14; animation: none; }
+.camp .zones .opcio-zona { fill: rgba(255,255,255,0.2); stroke: #FFE29A; }
+.camp .zones .opcio-zona.triada { fill: rgba(255, 210, 63, 0.55); stroke: #fff; }
 .tapa-demo { position: absolute; inset: 0; z-index: 4; }
 .boto-ara-jo { position: relative; z-index: 6; font-size: 3.6vmin; font-weight: 800; color: var(--blanc); background: var(--verd); border-radius: 99px; padding: 1.4vmin 3vmin; animation: batec 1.4s ease-in-out infinite; }
 .boto-mira { font-size: 3.4vmin; font-weight: 700; background: #F4EFE7; border-radius: 99px; padding: 1.2vmin 2.6vmin; }
