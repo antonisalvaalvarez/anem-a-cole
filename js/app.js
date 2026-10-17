@@ -2055,24 +2055,25 @@ function miniBanda(m) {
   const nou = fesJugador('.blaus', '', 870, 300, 9);
   const n = 3 + Math.floor(m.vel);
   const rivals = Array.from({ length: n }, (_, i) => {
-    const r = fesJugador('.vermells', '', 300 + i * (520 / Math.max(1, n - 1)), 70 + Math.random() * 120, '');
+    // Els contraris es mouen pel mig; la banda queda lliure.
+    const r = fesJugador('.vermells', '', 300 + i * (520 / Math.max(1, n - 1)), 250 + Math.random() * 60, '');
     Object.assign(r, { base: r.y, fase: Math.random() * 6 });
     return r;
   });
   const enganxa = () => { pilota.x = jo.x + 28; pilota.y = jo.y + 14; posa(pilota); };
   enganxa();
   let fase = 'puja';
-  // El carril de la banda: no es pot anar pel mig.
-  const CARRIL = 290;
+  // El carril de la banda (vora la línia): no es pot anar pel mig.
+  const CARRIL = 170;
   capaZones.innerHTML = `<path class="carril" d="M0,${CARRIL}H860"/>`;
   repetir = () => Veu.diu(fase === 'puja' ? 'Puja per la banda amb la pilota. Esquiva els vermells i no surtis del camp!' : 'Centra! Toca quan el nou sigui al cercle.');
   if (m.nivell === 0) m.assenyala(jo);
   arrossegable(m, jo, abans => {
     if (fase !== 'puja') { jo.x = abans.x; jo.y = abans.y; posa(jo); return; }
-    if (jo.y > CARRIL - 30) { jo.y = CARRIL - 30; posa(jo); }
+    if (jo.y > CARRIL - 25) { jo.y = CARRIL - 25; posa(jo); }
     enganxa();
     if (jo.y < 12) return m.fallo('Fora de banda! Puja per dins de la ratlla.');
-    if (rivals.some(r => aSegment(r, abans, jo) < 52)) return m.fallo("T'han pres la pilota! Esquiva'ls.");
+    if (rivals.some(r => aSegment(r, abans, jo) < 50)) return m.fallo("T'han pres la pilota! Esquiva'ls.");
     if (jo.x > 840) {
       fase = 'centra';
       capaZones.innerHTML = '<circle class="opcio-zona" cx="880" cy="310" r="58"/>';
@@ -2085,9 +2086,11 @@ function miniBanda(m) {
     t += (ara - abans) / 1000;
     abans = ara;
     for (const r of rivals) {
-      r.y = Math.max(28, Math.min(260, r.base + Math.sin(t * 1.4 * m.vel + r.fase) * 70));
+      // Amb més velocitat s'acosten més al carril, però sempre queda espai a la banda.
+      const amplitud = 60 + (m.vel - 1) * 80;
+      r.y = Math.max(CARRIL - 45, Math.min(A - 60, r.base + Math.sin(t * 1.4 * m.vel + r.fase) * amplitud));
       posa(r);
-      if (fase === 'puja' && dist(r, jo) < 52) return m.fallo("T'han pres la pilota! Esquiva'ls.");
+      if (fase === 'puja' && dist(r, jo) < 50) return m.fallo("T'han pres la pilota! Esquiva'ls.");
     }
     if (fase === 'centra') { nou.y = 310 + Math.sin(t * 2 * m.vel) * 130; posa(nou); }
     requestAnimationFrame(roda);
