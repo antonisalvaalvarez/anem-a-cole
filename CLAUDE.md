@@ -32,7 +32,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - Globus (explotar els globus en ordre mentre pugen; si se'n va el que busca, torna a sortir) i Parelles (memòria: número amb quantitat o lletra amb dibuix).
 - Laberint (portar el cotxe amb el dit recollint els números en ordre i sortir per la bandera; les parets no deixen passar).
 - Futbol (la primera vegada de cada jugada, una mà fa la demostració, i tocar la pantalla l'atura per jugar; rètol a dalt; a prop de porteria, xut de cara en 3 tocs: direcció, alçada i força; córner assajat; passades de l'1 al 5): jugar per les bandes (passar per la banda, no pel mig), atacar separats, defensar junts i treure la pilota mirant el cos (no la pilota) desmarcar-se (anar a un lloc on cap contrari tapi la passada) i xutar on no hi ha el porter.
-- Futbol té un menú: Jugades i 4 minijocs del lateral esquerre (ell és el número 3, amb anell groc): Rep la pilota (mirar abans de rebre), Puja per la banda (carril lliure vora la línia; els contraris es mouen pel mig; centrar), Et pressionen (passar ràpid al lliure) i Pressiona! (robar tancant per dins). 5 pilotes per minijoc, cada cop més ràpid.
+- Futbol té un menú: Jugades i 4 minijocs del lateral esquerre (ell és el número 3, amb anell groc): Rep la pilota (mirar abans de rebre), Puja per la banda (en primera persona: veu la línia de banda i els contraris de cara, canvia de carril amb fletxes per buscar l'espai; al final centra), Et pressionen (passar ràpid al lliure) i Pressiona! (robar tancant per dins). 5 pilotes per minijoc, cada cop més ràpid.
 - Han de ser **ràpids**: frases curtes, poques esperes, passar sol a la pregunta següent.
 
 ## Fora d'abast

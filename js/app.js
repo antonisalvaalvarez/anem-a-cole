@@ -2046,66 +2046,201 @@ function miniRebre(m) {
   })();
 }
 
-/* 2. Puja per la banda: esquivar contraris sense sortir i centrar quan toca. */
+/* 2. Puja per la banda, en primera persona: ell corre vora la línia de banda,
+   li vénen contraris de cara i ha de buscar l'espai (normalment, la banda). */
 function miniBanda(m) {
-  const { fesJugador, pilota, posa, mou, dist, svg, capaZones } = m;
-  const { L, A } = CAMP;
-  const inici = { x: 120, y: 90 };
-  const jo = fesJugador('.blaus', 'jo', inici.x, inici.y, 3);
-  const nou = fesJugador('.blaus', '', 870, 300, 9);
-  const n = 3 + Math.floor(m.vel);
-  const rivals = Array.from({ length: n }, (_, i) => {
-    // Els contraris es mouen pel mig; la banda queda lliure.
-    const r = fesJugador('.vermells', '', 300 + i * (520 / Math.max(1, n - 1)), 250 + Math.random() * 60, '');
-    Object.assign(r, { base: r.y, fase: Math.random() * 6 });
-    return r;
-  });
-  const enganxa = () => { pilota.x = jo.x + 28; pilota.y = jo.y + 14; posa(pilota); };
-  enganxa();
-  let fase = 'puja';
-  // El carril de la banda (vora la línia): no es pot anar pel mig.
-  const CARRIL = 170;
-  capaZones.innerHTML = `<path class="carril" d="M0,${CARRIL}H860"/>`;
-  repetir = () => Veu.diu(fase === 'puja' ? 'Puja per la banda amb la pilota. Esquiva els vermells i no surtis del camp!' : 'Centra! Toca quan el nou sigui al cercle.');
-  if (m.nivell === 0) m.assenyala(jo);
-  arrossegable(m, jo, abans => {
-    if (fase !== 'puja') { jo.x = abans.x; jo.y = abans.y; posa(jo); return; }
-    if (jo.y > CARRIL - 25) { jo.y = CARRIL - 25; posa(jo); }
-    enganxa();
-    if (jo.y < 12) return m.fallo('Fora de banda! Puja per dins de la ratlla.');
-    if (rivals.some(r => aSegment(r, abans, jo) < 50)) return m.fallo("T'han pres la pilota! Esquiva'ls.");
-    if (jo.x > 840) {
-      fase = 'centra';
-      capaZones.innerHTML = '<circle class="opcio-zona" cx="880" cy="310" r="58"/>';
-      Veu.diu('Ara centra! Toca quan el nou sigui al cercle.');
-    }
-  });
-  let t = 0, abans = performance.now();
-  const roda = ara => {
-    if (!m.viu()) return;
-    t += (ara - abans) / 1000;
-    abans = ara;
-    for (const r of rivals) {
-      // Amb més velocitat s'acosten més al carril, però sempre queda espai a la banda.
-      const amplitud = 60 + (m.vel - 1) * 80;
-      r.y = Math.max(CARRIL - 45, Math.min(A - 60, r.base + Math.sin(t * 1.4 * m.vel + r.fase) * amplitud));
-      posa(r);
-      if (fase === 'puja' && dist(r, jo) < 50) return m.fallo("T'han pres la pilota! Esquiva'ls.");
-    }
-    if (fase === 'centra') { nou.y = 310 + Math.sin(t * 2 * m.vel) * 130; posa(nou); }
-    requestAnimationFrame(roda);
+  const zona = m.svg.parentElement;
+  zona.innerHTML = `
+    <div class="pp">
+      <canvas class="pp-canvas"></canvas>
+      <button class="pp-fletxa esq" aria-label="Esquerra">⬅️</button>
+      <button class="pp-fletxa dre" aria-label="Dreta">➡️</button>
+      <button class="pp-centra" hidden>⚽ Centra!</button>
+    </div>`;
+  const canvas = zona.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const botoCentra = zona.querySelector('.pp-centra');
+  const CARRILS = [1.6, 4.6, 7.6]; // metres des de la línia de banda (0 = banda)
+  const ajuda = m.nivell === 0;
+  let carril = 1, x = CARRILS[1], camX = x; // comença una mica per dins
+  let recorregut = 0; // metres correguts
+  const velocitat = 7 * m.vel; // m/s
+  const onades = 3 + Math.min(3, Math.floor(m.vel * 1.5));
+  const rivals = [];
+  // Cada onada: 1 o 2 contraris de cara; gairebé sempre deixen lliure la banda.
+  for (let n = 0; n < onades; n++) {
+    const z = 30 + n * 26;
+    // Normalment et vénen de cara pel mig i l'espai és la banda; a vegades la banda està tapada i l'espai és per dins.
+    const bandaLliure = n === 0 || Math.random() < 0.85;
+    const ocupats = bandaLliure ? (Math.random() < 0.5 ? [1] : [1, 2]) : [0, 1];
+    ocupats.forEach(c => rivals.push({ z, x: CARRILS[c] + (Math.random() - 0.5) * 0.6, c, fase: Math.random() * 6 }));
+  }
+  const final = 30 + onades * 26;
+  let fase = 'corre', avisat = new Set(), t = 0;
+  const nou = { x: 26.5, z: 15 }; // el davanter a l'àrea
+  // Públic de la grada (punts fixos).
+  const public_ = Array.from({ length: 160 }, () => ({ u: Math.random(), v: Math.random(), c: aleatori(['#FF7A6B', '#FFBE3D', '#2EC4A6', '#8C7BFF', '#4AA8FF', '#FFFFFF', '#F06FB0']) }));
+
+  const mida = () => {
+    const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(r.width * dpr)) { canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); }
+    return { W: canvas.width, H: canvas.height };
   };
-  requestAnimationFrame(roda);
-  svg.addEventListener('pointerdown', async () => {
+
+  function dibuixa() {
+    const { W, H } = mida();
+    const hor = H * 0.36, f = Math.min(W, H * 1.4) * 0.9, alt = 1.5;
+    const P = (px, z) => ({ x: W / 2 + (px - camX) * f / z, y: hor + alt * f / z });
+    // Cel i grada
+    const cel = ctx.createLinearGradient(0, 0, 0, hor);
+    cel.addColorStop(0, '#8FCBFF'); cel.addColorStop(1, '#DDF0FF');
+    ctx.fillStyle = cel; ctx.fillRect(0, 0, W, hor);
+    ctx.fillStyle = '#5B6785'; ctx.fillRect(0, hor - H * 0.13, W, H * 0.13);
+    for (const p of public_) { ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.u * W, hor - H * 0.12 + p.v * H * 0.1, Math.max(2, H * 0.006), 0, 7); ctx.fill(); }
+    // Gespa amb franges que s'acosten mentre corre
+    ctx.fillStyle = '#46A262'; ctx.fillRect(0, hor, W, H - hor);
+    const pas = 5, despl = recorregut % (pas * 2);
+    for (let z = pas * 2 - despl; z < 120; z += pas * 2) {
+      const a = Math.max(0.6, z), b = z + pas;
+      const ya = hor + alt * f / a, yb = hor + alt * f / b;
+      ctx.fillStyle = '#4FB06C'; ctx.fillRect(0, yb, W, ya - yb);
+    }
+    // Fora del camp (a l'esquerra de la línia): pista i tanca
+    const quad = (pts, color) => { ctx.fillStyle = color; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath(); ctx.fill(); };
+    const n1 = P(0, 0.6), n2 = P(0, 150), e1 = P(-30, 0.6), e2 = P(-30, 150);
+    quad([n1, n2, e2, e1], '#C9B38A');
+    // Tanca baixa (sense anuncis) una mica més enllà de la línia.
+    const a = P(-7, 6), b = P(-7, 150), ha = 0.8 * f / 6, hb = 0.8 * f / 150;
+    quad([a, b, { x: b.x, y: b.y - hb }, { x: a.x, y: a.y - ha }], '#3B6FD8');
+    // Línia de banda
+    const l1 = P(-0.06, 0.6), l2 = P(-0.06, 150), l3 = P(0.06, 150), l4 = P(0.06, 0.6);
+    quad([l1, l2, l3, l4], '#FFFFFF');
+    // Ajuda: carril lliure il·luminat
+    if (ajuda && fase === 'corre') {
+      const prop = rivals.filter(r => r.z - recorregut > 3 && r.z - recorregut < 28);
+      if (prop.length) {
+        const lliure = [0, 1, 2].find(c => !prop.some(r => r.c === c));
+        if (lliure !== undefined && lliure !== carril) {
+          const zA = Math.max(1, prop[0].z - recorregut - 6), zB = prop[0].z - recorregut + 3;
+          const cx = CARRILS[lliure];
+          quad([P(cx - 1.3, zA), P(cx - 1.3, zB), P(cx + 1.3, zB), P(cx + 1.3, zA)], 'rgba(255, 226, 154, 0.55)');
+        }
+      }
+    }
+    // Àrea i porteria al final
+    const zArea = final - recorregut;
+    if (zArea < 120) {
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(2, W * 0.003);
+      const linia = (ax, az, bx, bz) => { if (az < 0.7 || bz < 0.7) return; const a = P(ax, az), b = P(bx, bz); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); };
+      linia(13, zArea, 40, zArea); linia(13, zArea, 13, zArea + 16); linia(40, zArea, 40, zArea + 16);
+      linia(0, zArea + 16, 60, zArea + 16);
+      if (zArea + 16 > 1) {
+        const pa = P(23, zArea + 16), pb = P(30.3, zArea + 16), h = 2.44 * f / (zArea + 16);
+        ctx.lineWidth = Math.max(3, W * 0.006);
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x, pa.y - h); ctx.lineTo(pb.x, pb.y - h); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+      }
+    }
+    // Jugadors (els de lluny primer)
+    const figures = rivals.map(r => ({ ...r, zr: r.z - recorregut, color: '#E5484D' })).filter(r => r.zr > 0.8);
+    if (fase !== 'corre') figures.push({ x: nou.x, zr: nou.z, color: '#2F6FED', fase: t * 3, num: 9 });
+    figures.sort((a, b) => b.zr - a.zr).forEach(r => jugador(P, f, r));
+    if (fase === 'centra') {
+      const c = P(26.5, nou.z), rx = 2.2 * f / nou.z, ry = rx * 0.25;
+      ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = Math.max(3, W * 0.005); ctx.setLineDash([12, 8]);
+      ctx.beginPath(); ctx.ellipse(c.x, c.y, rx, ry, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // La meva pilota, a baix
+    if (fase === 'xut' || fase === 'fi') return;
+    const bota = Math.abs(Math.sin(t * 9)) * H * 0.012;
+    const rp = Math.min(W, H) * 0.05;
+    const pb = { x: W / 2 + (x - camX) * W * 0.08, y: H - rp * 2.2 };
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(pb.x, pb.y + rp * 0.9, rp, rp * 0.3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#2B2D42'; ctx.lineWidth = rp * 0.08;
+    ctx.beginPath(); ctx.arc(pb.x, pb.y - bota, rp, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#2B2D42'; ctx.beginPath();
+    for (let i = 0; i < 5; i++) { const a = t * 6 + i * 1.2566; const px = pb.x + Math.cos(a) * rp * 0.35, py = pb.y - bota + Math.sin(a) * rp * 0.35; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.fill();
+  }
+
+  // Un jugador dibuixat en perspectiva (alçada 1,8 m).
+  function jugador(P, f, r) {
+    const peu = P(r.x, r.zr), s = f / r.zr, h = 1.8 * s;
+    const cama = Math.sin((r.fase || 0) + t * 10) * h * 0.06;
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(peu.x, peu.y, h * 0.2, h * 0.05, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#2B2D42'; ctx.lineCap = 'round'; ctx.lineWidth = h * 0.07;
+    ctx.beginPath(); ctx.moveTo(peu.x - h * 0.06, peu.y - h * 0.45); ctx.lineTo(peu.x - h * 0.07 + cama, peu.y);
+    ctx.moveTo(peu.x + h * 0.06, peu.y - h * 0.45); ctx.lineTo(peu.x + h * 0.07 - cama, peu.y); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(peu.x - h * 0.13, peu.y - h * 0.52, h * 0.26, h * 0.12);
+    ctx.fillStyle = r.color;
+    ctx.beginPath(); ctx.roundRect(peu.x - h * 0.15, peu.y - h * 0.82, h * 0.3, h * 0.33, h * 0.06); ctx.fill();
+    ctx.strokeStyle = '#F2C7A5'; ctx.lineWidth = h * 0.055;
+    ctx.beginPath(); ctx.moveTo(peu.x - h * 0.15, peu.y - h * 0.78); ctx.lineTo(peu.x - h * 0.24 - cama * 0.5, peu.y - h * 0.58);
+    ctx.moveTo(peu.x + h * 0.15, peu.y - h * 0.78); ctx.lineTo(peu.x + h * 0.24 + cama * 0.5, peu.y - h * 0.58); ctx.stroke();
+    ctx.fillStyle = '#F2C7A5'; ctx.beginPath(); ctx.arc(peu.x, peu.y - h * 0.9, h * 0.09, 0, 7); ctx.fill();
+    ctx.fillStyle = '#5A3A22'; ctx.beginPath(); ctx.arc(peu.x, peu.y - h * 0.93, h * 0.09, Math.PI, 0); ctx.fill();
+    if (r.num) { ctx.fillStyle = '#fff'; ctx.font = `800 ${h * 0.15}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(r.num, peu.x, peu.y - h * 0.66); }
+  }
+
+  const canvia = d => {
+    if (fase !== 'corre' || !m.viu()) return;
+    if (carril + d < 0) { fase = 'fi'; return m.fallo('Fora de banda! Corre per dins de la línia.'); }
+    if (carril + d > 2) return;
+    carril += d;
+  };
+  zona.querySelector('.esq').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(-1); });
+  zona.querySelector('.dre').addEventListener('pointerdown', e => { e.stopPropagation(); canvia(1); });
+  canvas.addEventListener('pointerdown', e => {
+    if (fase === 'centra') return centra();
+    const r = canvas.getBoundingClientRect();
+    canvia(e.clientX - r.left < r.width / 2 ? -1 : 1);
+  });
+  botoCentra.addEventListener('pointerdown', e => { e.stopPropagation(); centra(); });
+
+  async function centra() {
     if (fase !== 'centra' || !m.viu()) return;
     fase = 'xut';
-    const bo = Math.abs(nou.y - 310) < 58;
-    await mou(pilota, nou.x, nou.y, 500);
+    botoCentra.hidden = true;
+    const bo = Math.abs(nou.x - 26.5) < 2.2;
     if (!bo) return m.fallo("Ara no! Espera que el nou sigui al cercle.");
-    await mou(pilota, L + 10, A / 2, 350);
     m.encert('Gol! Quina centrada!');
-  });
-  Veu.diu('Puja per la banda! Esquiva els vermells.');
+  }
+
+  let abans = performance.now();
+  function roda(ara) {
+    if (!m.viu()) return;
+    const dt = Math.min(0.05, (ara - abans) / 1000);
+    abans = ara;
+    t += dt;
+    x += (CARRILS[carril] - x) * Math.min(1, dt * 10);
+    // A l'hora de centrar, mira cap a l'àrea.
+    const mira = fase === 'corre' ? x : 22;
+    camX += (mira - camX) * Math.min(1, dt * (fase === 'corre' ? 6 : 2.5));
+    if (fase === 'corre') {
+      recorregut += velocitat * dt;
+      for (const r of rivals) {
+        r.z -= 1.5 * dt; // també vénen cap a tu
+        const zr = r.z - recorregut;
+        if (zr < 1.6 && zr > 0.4 && Math.abs(r.x - x) < 1.3) { fase = 'fi'; dibuixa(); return m.fallo("T'ha pres la pilota! Busca l'espai lliure."); }
+        if (ajuda && zr < 22 && zr > 10 && !avisat.has(r) && Math.abs(r.x - x) < 1.3) {
+          avisat.add(r);
+          const lliure = [0, 1, 2].find(c => !rivals.some(o => Math.abs(o.z - r.z) < 4 && o.c === c));
+          Veu.diu(lliure === 0 ? 'Espai per la banda!' : 'Busca l\'espai!');
+        }
+      }
+      if (recorregut > final - 14) {
+        fase = 'centra';
+        botoCentra.hidden = false;
+        zona.querySelectorAll('.pp-fletxa').forEach(b => { b.hidden = true; });
+        Veu.diu('Centra! Toca quan el nou sigui al cercle.');
+      }
+    }
+    if (fase === 'centra') nou.x = 26.5 + Math.sin(t * 2 * m.vel) * 5;
+    dibuixa();
+    requestAnimationFrame(roda);
+  }
+  repetir = () => Veu.diu(fase === 'centra' ? 'Centra! Toca quan el nou sigui al cercle.' : "Corre per la banda! Si et ve un contrari de cara, busca l'espai amb les fletxes.");
+  Veu.diu("Corre per la banda! Busca l'espai.");
+  requestAnimationFrame(roda);
 }
 
 /* 3. Et pressionen: passar-la ràpid a un company lliure. */
