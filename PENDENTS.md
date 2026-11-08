@@ -33,6 +33,9 @@
 - [ ] Pissarra, botó ⚔️ Ataquem: si els moviments (obrir-se, el del mig a prop, davanter lluny, defenses darrere) són com ho voleu ensenyar.
 - [ ] Pissarra, botó 🧠 Bascula: si la col·locació en defensa i els dos que pressionen són com ho voleu ensenyar (es pot ajustar).
 
+## Per provar (versió 24)
+- [ ] Futbol → Bascula: si les regles de qui pressiona (segons qui té la pilota) són les que fa servir l'entrenador.
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).

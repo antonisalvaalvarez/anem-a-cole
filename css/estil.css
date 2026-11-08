@@ -525,6 +525,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .camp .mobil circle, .camp .company circle { animation: batec-jugador 1.6s ease-in-out infinite; }
 @keyframes batec-jugador { 50% { stroke: #FFE29A; } }
 .camp .jo circle { stroke: #FFD23F; stroke-width: 9; }
+.camp .vigila circle { stroke: #FFFFFF; stroke-width: 9; stroke-dasharray: 8 6; }
 .camp .triat circle { stroke: #FFD23F; stroke-width: 10; }
 .camp .agafat circle { stroke: #FFE29A; stroke-width: 9; animation: none; }
 .camp .pilota circle { fill: #fff; stroke: #2B2D42; stroke-width: 3; }

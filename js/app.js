@@ -2838,11 +2838,15 @@ function pantallaPissarra() {
   svg.addEventListener('pointercancel', deixa);
 }
 
-/* ---------- Bascula: mous el contrari amb la pilota i tot l'equip es mou alhora ---------- */
+/* ---------- Bascula: els vermells es passen la pilota i el nostre equip (3-2-1) es mou alhora ---------- */
+// Toques un vermell i li passen la pilota. Segons qui la té, els nostres pressionen d'una manera o altra.
+// Els vermells ataquen cap a la nostra porteria (x = 0). Nostres: 1 porter; 2 lateral esq., 3 central,
+// 4 lateral dret; 5 i 6 mitjos; 7 davanter.
 function pantallaBascula() {
   torn++;
   const elTorn = torn;
   Veu.calla();
+  const { A } = CAMP;
   app.innerHTML = `
     ${barra({ repetir: true })}
     <main class="futbol">
@@ -2855,78 +2859,139 @@ function pantallaBascula() {
   app.querySelector('.boto-menu').addEventListener('click', pantallaFutbolMenu);
   const C = dibuixaCamp(app.querySelector('.zona-joc'), elTorn);
   const { svg, aMon, dist, posa, fesJugador, pilota, capaZones } = C;
-  svg.insertAdjacentHTML('afterbegin', '<defs><marker id="punta-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker></defs>');
-  const atacant = fesJugador('.vermells', 'peca', 520, CAMP.A / 2, 10);
-  const enganxa = () => { pilota.x = atacant.x - 30; pilota.y = atacant.y + 10; posa(pilota); };
+  svg.insertAdjacentHTML('afterbegin', `<defs>
+    <marker id="punta-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker>
+    <marker id="punta-v" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFFFFF"/></marker></defs>`);
+  // Els vermells (també 3-2-1), atacant cap a la nostra porteria.
+  const ROLS = [
+    { rol: 'porter', nom: 'porter', x: 955, y: A / 2 },
+    { rol: 'lateral', nom: 'lateral', x: 770, y: 85 },
+    { rol: 'central', nom: 'central', x: 810, y: A / 2 },
+    { rol: 'lateral', nom: 'lateral', x: 770, y: A - 85 },
+    { rol: 'mig', nom: 'mig', x: 600, y: 190 },
+    { rol: 'mig', nom: 'mig', x: 600, y: A - 190 },
+    { rol: 'davanter', nom: 'davanter', x: 470, y: A / 2 },
+  ];
+  const vermells = ROLS.map((r, i) => Object.assign(fesJugador('.vermells', `${i ? '' : 'porter'} peca`, r.x, r.y, i + 1), { rol: r.rol, nom: r.nom }));
+  let te = vermells[2]; // comença el seu central
+  const enganxa = () => { pilota.x = te.x - 30; pilota.y = te.y + 8; posa(pilota); };
   enganxa();
-  const inici = posicionsDefensa(pilota);
-  const blaus = inici.map(([x, y], i) => fesJugador('.blaus', i ? '' : 'porter', x, y, i + 1));
-  let pressors = [];
-  const frase = "Mou el jugador vermell amb la pilota. Mira com bascula tot l'equip i quins dos van a pressionar.";
-  repetir = () => Veu.diu(frase);
+  const blaus = posicionsDefensa(pilota).map(([x, y], i) => fesJugador('.blaus', i ? '' : 'porter', x, y, i + 1));
+  let pla = { pos: [], pressors: [], vigila: null };
 
-  // Cada fotograma, cada blau s'acosta al seu lloc: així es veu com es mouen tots alhora.
-  const objectius = () => {
-    const pos = posicionsDefensa(pilota);
-    const nous = [1, 2, 3, 4, 5, 6].sort((a, b) => Math.hypot(pos[a][0] - atacant.x, pos[a][1] - atacant.y) - Math.hypot(pos[b][0] - atacant.x, pos[b][1] - atacant.y)).slice(0, 2);
-    pressors = nous;
-    // Els dos que pressionen surten cap al contrari (s'hi queden a prop, un de cara i l'altre tancant per dins).
-    const dins = atacant.y < CAMP.A / 2 ? 1 : -1;
-    nous.forEach((i, n) => {
-      const [x, y] = pos[i];
-      const tx = atacant.x - 85, ty = atacant.y + (n ? dins * 85 : 0);
-      pos[i] = [x + (tx - x) * 0.6, y + (ty - y) * 0.6];
-    });
-    return pos;
+  // On ha d'anar cadascú dels nostres segons qui té la pilota.
+  function planifica() {
+    const b = { x: pilota.x, y: pilota.y };
+    const pos = posicionsDefensa(b);
+    const dalt = b.y < A / 2;
+    const latProp = dalt ? 1 : 3, migProp = dalt ? 4 : 5, migLluny = dalt ? 5 : 4;
+    const central = vermells[2];
+    const migSeu = dalt ? vermells[4] : vermells[5];
+    const cap = (i, t, f = 0.7) => { pos[i] = [pos[i][0] + (t[0] - pos[i][0]) * f, pos[i][1] + (t[1] - pos[i][1]) * f]; };
+    let pressors = [], vigila = null;
+    if (te.rol === 'porter' || te.rol === 'central') {
+      // El nostre 7 surt a pressionar; els mitjos vigilen els seus mitjos.
+      pressors = [6];
+      cap(6, [b.x - 80, b.y]);
+      cap(4, [vermells[4].x - 60, vermells[4].y], 0.6);
+      cap(5, [vermells[5].x - 60, vermells[5].y], 0.6);
+    } else if (te.rol === 'lateral') {
+      // El mig d'aquella banda pressiona; el lateral d'aquella banda tapa el seu mig de banda;
+      // el 7 es posa entre la pilota i el seu central perquè no li torni.
+      pressors = [migProp, latProp];
+      cap(migProp, [b.x - 80, b.y + (dalt ? 25 : -25)], 0.85);
+      cap(latProp, [migSeu.x - 60, migSeu.y], 0.85);
+      vigila = 6;
+      pos[6] = [(b.x + central.x) / 2 - 40, (b.y + central.y) / 2];
+      cap(migLluny, [b.x - 200, A / 2], 0.4);
+    } else {
+      // Un mig o el davanter: hi van els dos més a prop (sense el 7) i el central ajuda per darrere.
+      pressors = [1, 2, 3, 4, 5].sort((a, c) => Math.hypot(pos[a][0] - b.x, pos[a][1] - b.y) - Math.hypot(pos[c][0] - b.x, pos[c][1] - b.y)).slice(0, 2);
+      const dins = dalt ? 1 : -1;
+      pressors.forEach((i, n) => cap(i, [b.x - 80, b.y + (n ? dins * 80 : 0)], 0.75));
+    }
+    pla = { pos, pressors, vigila };
+  }
+
+  const fletxa = (j, t, classe, punta) => {
+    const d = Math.hypot(t.x - j.x, t.y - j.y) || 1;
+    if (d < 60) return '';
+    const x1 = j.x + (t.x - j.x) * 36 / d, y1 = j.y + (t.y - j.y) * 36 / d;
+    const x2 = j.x + (t.x - j.x) * (d - 38) / d, y2 = j.y + (t.y - j.y) * (d - 38) / d;
+    return `<path class="${classe}" d="M${x1},${y1}L${x2},${y2}" marker-end="url(#${punta})"/>`;
   };
   let abans = performance.now();
   const roda = ara => {
     if (elTorn !== torn) return;
     const dt = Math.min(0.05, (ara - abans) / 1000);
     abans = ara;
-    const pos = objectius();
+    planifica();
     blaus.forEach((j, i) => {
-      j.x += (pos[i][0] - j.x) * Math.min(1, dt * 3.5);
-      j.y += (pos[i][1] - j.y) * Math.min(1, dt * 3.5);
+      j.x += (pla.pos[i][0] - j.x) * Math.min(1, dt * 3);
+      j.y += (pla.pos[i][1] - j.y) * Math.min(1, dt * 3);
       posa(j);
-      j.g.classList.toggle('triat', pressors.includes(i));
+      j.g.classList.toggle('triat', pla.pressors.includes(i));
+      j.g.classList.toggle('vigila', pla.vigila === i);
     });
-    capaZones.innerHTML = pressors.map(i => {
-      const j = blaus[i], d = dist(j, atacant) || 1;
-      if (d < 60) return '';
-      const x1 = j.x + (atacant.x - j.x) * 36 / d, y1 = j.y + (atacant.y - j.y) * 36 / d;
-      const x2 = j.x + (atacant.x - j.x) * (d - 40) / d, y2 = j.y + (atacant.y - j.y) * (d - 40) / d;
-      return `<path class="fletxa-pressio" d="M${x1},${y1}L${x2},${y2}" marker-end="url(#punta-b)"/>`;
-    }).join('');
+    capaZones.innerHTML = pla.pressors.map(i => fletxa(blaus[i], te, 'fletxa-pressio', 'punta-b')).join('')
+      + (pla.vigila !== null ? fletxa(blaus[pla.vigila], vermells[2], 'fletxa-moviment', 'punta-v') : '');
     requestAnimationFrame(roda);
   };
   requestAnimationFrame(roda);
 
+  const explica = () => {
+    const n = i => NUMEROS[i + 1];
+    let t = `La té el seu ${te.nom}. `;
+    if (pla.pressors.length === 1) t += `Hi va el nostre ${n(pla.pressors[0])}. Els altres vigilen.`;
+    else t += `Hi van el ${n(pla.pressors[0])} i el ${n(pla.pressors[1])}.`;
+    if (pla.vigila !== null) t += ' El set tapa la passada al central.';
+    Veu.diu(t);
+  };
+  let ocupat = false;
+  async function passa(r) {
+    if (ocupat || r === te) return;
+    ocupat = true;
+    const de = { x: pilota.x, y: pilota.y };
+    te = { ...r, x: de.x + 30, y: de.y - 8 }; // mentre viatja, encara no la té ningú
+    await C.mou(pilota, r.x - 30, r.y + 8, 550);
+    te = r;
+    enganxa();
+    ocupat = false;
+    planifica();
+    explica();
+  }
+
+  // Tocar un vermell: li passen la pilota. Arrossegar-lo: el canvies de lloc (si té la pilota, se l'emporta).
   let agafat = null;
   svg.addEventListener('pointerdown', e => {
     const p = aMon(e);
-    if (dist(atacant, p) > 80 && dist(pilota, p) > 60) return;
+    const r = vermells.slice().sort((a, b) => dist(a, p) - dist(b, p))[0];
+    if (dist(r, p) > 60) return;
     svg.setPointerCapture(e.pointerId);
-    agafat = e.pointerId;
-    atacant.g.classList.add('agafat');
+    agafat = { id: e.pointerId, r, x: p.x, y: p.y, mogut: false };
   });
   svg.addEventListener('pointermove', e => {
-    if (agafat !== e.pointerId) return;
+    if (!agafat || agafat.id !== e.pointerId) return;
     const p = aMon(e);
-    atacant.x = Math.max(60, Math.min(CAMP.L - 40, p.x));
-    atacant.y = Math.max(25, Math.min(CAMP.A - 25, p.y));
-    posa(atacant);
-    enganxa();
+    if (!agafat.mogut && Math.hypot(p.x - agafat.x, p.y - agafat.y) < 14) return;
+    agafat.mogut = true;
+    agafat.r.x = Math.max(40, Math.min(CAMP.L - 20, p.x));
+    agafat.r.y = Math.max(25, Math.min(A - 25, p.y));
+    posa(agafat.r);
+    if (agafat.r === te) enganxa();
   });
   const deixa = e => {
-    if (agafat !== e.pointerId) return;
+    if (!agafat || agafat.id !== e.pointerId) return;
+    const { r, mogut } = agafat;
     agafat = null;
-    atacant.g.classList.remove('agafat');
-    const [a, b] = pressors.map(i => i + 1);
-    Veu.diu(`Hi van el ${NUMEROS[a]} i el ${NUMEROS[b]}.`);
+    if (!mogut) passa(r);
+    else if (r === te) explica();
   };
   svg.addEventListener('pointerup', deixa);
   svg.addEventListener('pointercancel', deixa);
+
+  const frase = "Toca un jugador vermell i li passaran la pilota. Mira com bascula el nostre equip i qui va a pressionar.";
+  repetir = () => Veu.diu(frase);
   Veu.diu(frase);
 }
 
