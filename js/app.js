@@ -2592,6 +2592,24 @@ function miniPressiona(m) {
 }
 
 /* ---------- Pissarra d'entrenador (futbol 7) ---------- */
+// On s'ha de posar l'equip en defensa segons on és la pilota (la nostra porteria a x=0).
+// Bloc compacte entre la pilota i la porteria, desplaçat cap al costat de la pilota.
+// Jugadors: 1 porter; 2 i 3 defenses; 4, 5 i 6 mitjos; 7 davanter.
+function posicionsDefensa(b) {
+  const { A } = CAMP;
+  const lim = (v, a, c) => Math.max(a, Math.min(c, v));
+  const cy = lim(A / 2 + (b.y - A / 2) * 0.65, 175, A - 175); // centre del bloc
+  const xm = lim(b.x - 180, 190, 400); // línia dels mitjos, una mica per darrere de la pilota
+  const xd = lim(xm - 115, 110, 290); // línia dels defenses
+  const xf = Math.max(xm + 40, lim(Math.min(xm + 110, b.x - 80), 250, 520)); // davanter, entre els mitjos i la pilota
+  return [
+    [45, lim(A / 2 + (b.y - A / 2) * 0.3, A / 2 - 70, A / 2 + 70)],
+    [xd, cy - 80], [xd, cy + 80],
+    [xm, cy - 135], [xm, cy], [xm, cy + 135],
+    [xf, lim((cy + b.y) / 2, 120, A - 120)],
+  ];
+}
+
 // Posicions inicials (camp de 1000 × 620; la nostra porteria a l'esquerra). Porter + 3-2-1.
 const PISSARRA_INICI = {
   blaus: [[45, 310], [210, 130], [180, 310], [210, 490], [390, 200], [390, 420], [480, 310]],
@@ -2641,6 +2659,7 @@ function pantallaPissarra() {
       <div class="eines-pissarra">
         ${Object.entries(PISSARRA_POSICIONS).map(([id, p]) => `<button class="boto-eina" data-eina="posicio" data-posicio="${id}">${p.emoji} ${p.nom}</button>`).join('')}
         <button class="boto-eina" data-eina="contraris" aria-label="Mostrar o amagar contraris">👁 Vermells</button>
+        <button class="boto-eina" data-eina="auto" aria-label="Defensa automàtica">🧠 Bascula</button>
       </div>
       <div class="zona-joc"></div>
     </main>`;
@@ -2664,13 +2683,49 @@ function pantallaPissarra() {
       vermells: vermells.map(j => [Math.round(j.x), Math.round(j.y)]),
       pilota: [Math.round(pilota.x), Math.round(pilota.y)],
       contraris: desat.contraris,
+      auto: desat.auto,
     };
     Estat.desa();
   };
+
+  // Defensa automàtica: l'equip bascula cap a la pilota i els dos més a prop hi van (fletxes).
+  svg.insertAdjacentHTML('afterbegin', '<defs><marker id="punta-fletxa" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker></defs>');
+  const dibuixaFletxes = () => {
+    if (!desat.auto) { C.capaZones.innerHTML = ''; blaus.forEach(j => j.g.classList.remove('triat')); return; }
+    const pressors = blaus.slice(1).sort((a, b) => dist(a, pilota) - dist(b, pilota)).slice(0, 2);
+    blaus.forEach(j => j.g.classList.toggle('triat', pressors.includes(j)));
+    C.capaZones.innerHTML = pressors.map(j => {
+      const d = dist(j, pilota) || 1, fi = Math.max(0, d - 40);
+      const x2 = j.x + (pilota.x - j.x) * fi / d, y2 = j.y + (pilota.y - j.y) * fi / d;
+      const x1 = j.x + (pilota.x - j.x) * 38 / d, y1 = j.y + (pilota.y - j.y) * 38 / d;
+      return d > 50 ? `<path class="fletxa-pressio" d="M${x1},${y1}L${x2},${y2}" marker-end="url(#punta-fletxa)"/>` : '';
+    }).join('');
+  };
+  const aplicaAuto = async anima => {
+    if (!desat.auto) return dibuixaFletxes();
+    const pos = posicionsDefensa(pilota);
+    if (anima) {
+      C.capaZones.innerHTML = '';
+      await Promise.all(blaus.map((j, i) => C.mou(j, pos[i][0], pos[i][1], 600)));
+    } else {
+      blaus.forEach((j, i) => { j.x = pos[i][0]; j.y = pos[i][1]; posa(j); });
+    }
+    dibuixaFletxes();
+  };
+  const marcaAuto = () => app.querySelector('[data-eina=auto]').classList.toggle('apagat', !desat.auto);
+  marcaAuto();
+  dibuixaFletxes();
   app.querySelector('.eines-pissarra').addEventListener('click', async e => {
     const b = e.target.closest('[data-eina]');
     if (!b) return;
     if (b.dataset.eina === 'contraris') { desat.contraris = !desat.contraris; mostraContraris(); desa(); }
+    if (b.dataset.eina === 'auto') {
+      desat.auto = !desat.auto;
+      marcaAuto();
+      if (desat.auto) Veu.diu("Mou la pilota i mira com bascula l'equip. Les fletxes diuen qui va a pressionar.");
+      await aplicaAuto(true);
+      desa();
+    }
     if (b.dataset.eina === 'posicio') {
       // Els jugadors van caminant fins a la posició preparada.
       const P = PISSARRA_POSICIONS[b.dataset.posicio];
@@ -2680,6 +2735,7 @@ function pantallaPissarra() {
         ...P.vermells.map(([x, y], i) => C.mou(vermells[i], x, y, 700)),
         C.mou(pilota, P.pilota[0], P.pilota[1], 700),
       ]);
+      await aplicaAuto(true);
       desa();
     }
   });
@@ -2701,6 +2757,7 @@ function pantallaPissarra() {
     peca.x = Math.max(-10, Math.min(CAMP.L + 10, p.x));
     peca.y = Math.max(-10, Math.min(CAMP.A + 10, p.y));
     posa(peca);
+    if (desat.auto) { if (peca === pilota) aplicaAuto(false); else dibuixaFletxes(); }
   });
   const deixa = e => {
     const peca = agafats.get(e.pointerId);

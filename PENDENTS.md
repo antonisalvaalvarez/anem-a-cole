@@ -29,6 +29,9 @@
 - [ ] Pissarra de futbol 7: si cal fletxes per dibuixar moviments o guardar més d'una jugada.
 - [ ] Jugada "Surt des de darrere": si l'entén i si s'entén la variant del pivot lliure.
 
+## Per provar (versió 20)
+- [ ] Pissarra, botó 🧠 Bascula: si la col·locació en defensa i els dos que pressionen són com ho voleu ensenyar (es pot ajustar).
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).
