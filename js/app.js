@@ -1389,7 +1389,9 @@ function jugadaCamp(k) {
     const bandaBaix = fesJugador('.blaus', 'company', 420, A - 60, 11);
     fesJugador('.blaus', '', 640, A / 2, 9);
     // Un vermell vigila el pivot (el mig) i un altre esperarà per marcar un defensa.
-    fesJugador('.vermells', '', 305, A / 2 + 25, 10);
+    // A vegades el pivot està sol: llavors sí que se li pot passar.
+    const pivotLliure = Math.random() < 0.35;
+    fesJugador('.vermells', '', pivotLliure ? 470 : 305, pivotLliure ? A / 2 + 150 : A / 2 + 25, 10);
     const marcador = fesJugador('.vermells', '', 330, A / 2 - 120, 9);
     fesJugador('.vermells', '', 480, 140, 7);
     Object.assign(pilota, { x: 78, y: A / 2 }); posa(pilota);
@@ -1397,7 +1399,7 @@ function jugadaCamp(k) {
     if (cercles) capaZones.innerHTML = cercle(obertDalt) + cercle(obertBaix);
     let pas = 1;
     const frase1 = "El porter té la pilota. Obrim-nos! Porta els dos defenses cap a les bandes.";
-    const frase2 = "Passa-la al defensa que està sol.";
+    const frase2 = pivotLliure ? 'Passa-la a qui estigui sol. Mira el del mig!' : 'Passa-la al defensa que està sol.';
     const frase3 = 'Ara, a la banda!';
     repetir = () => Veu.diu([frase1, frase2, frase3][pas - 1]);
     const obert = j => (cercles ? dist(j, j === defensaDalt ? obertDalt : obertBaix) <= 80 : (j === defensaDalt ? j.y < 170 : j.y > A - 170) && j.x < 320);
@@ -1423,6 +1425,16 @@ function jugadaCamp(k) {
       if (ocupat || acabat) return;
       ocupat = true;
       if (pas === 2) {
+        if (j === pivot && pivotLliure) {
+          // El del mig està sol i ben ensenyat: sí que li podem passar.
+          await mou(pilota, pivot.x - 25, pivot.y, 550);
+          pas = 4;
+          tocables.length = 0;
+          tocables.push(bandaDalt, bandaBaix);
+          if (!demo) Veu.diu('Molt bé, estava sol! Ara obre-la a una banda.');
+          ocupat = false;
+          return;
+        }
         if (j === pivot) {
           fallada();
           await mou(pilota, 230, A / 2 + 10, 450);
@@ -1442,6 +1454,13 @@ function jugadaCamp(k) {
         }
         ocupat = false;
         return;
+      }
+      if (pas === 4) {
+        // Des del mig, qualsevol banda és bona.
+        acabat = true;
+        await mou(pilota, j.x + 25, j.y, 550);
+        await Promise.all([mou(j, 600, j.y, 700), mou(pilota, 625, j.y, 700)]);
+        return fet('Molt bé! Pel mig quan està sol, i després a la banda!');
       }
       if (pas === 3) {
         const banda = lliure === defensaDalt ? bandaDalt : bandaBaix;

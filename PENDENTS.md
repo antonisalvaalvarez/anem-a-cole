@@ -27,7 +27,7 @@
 ## Per provar (versió 16)
 - [ ] Inici amb 3 seccions (Col·legi, Jocs, Futbol).
 - [ ] Pissarra de futbol 7: si cal fletxes per dibuixar moviments o guardar més d'una jugada.
-- [ ] Jugada "Surt des de darrere": si l'entén i si cal afegir més passos (per exemple, el pivot quan està lliure).
+- [ ] Jugada "Surt des de darrere": si l'entén i si s'entén la variant del pivot lliure.
 
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
