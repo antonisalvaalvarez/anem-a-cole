@@ -60,7 +60,11 @@ let torn = 0; // per aturar exercicis quan es canvia de pantalla
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-accio]');
   if (!b) return;
-  if (b.dataset.accio === 'inici') pantallaInici();
+  if (b.dataset.accio === 'inici') {
+    // Des d'un menú, a l'inici; des d'un joc, al seu menú.
+    if (app.querySelector('.menu-seccio') || !menuActual) pantallaInici();
+    else menuActual();
+  }
   if (b.dataset.accio === 'premis') { Veu.diu(FRASES.menu.premis); pantallaPremis(); }
   if (b.dataset.accio === 'repetir' && repetir) repetir();
 });
@@ -167,72 +171,81 @@ function pantallaEntrada() {
 }
 
 /* ---------- Inici ---------- */
+// Les tres seccions de l'inici. Cada joc: [id, nom, dibuix, classe de color].
+const SECCIONS = {
+  collegi: {
+    nom: 'Col·legi', emoji: '🎒', classe: 't-collegi',
+    jocs: () => [
+      ['lletres', 'Lletres', `<span class="dibuix lletra-gran">${mostra(actives()[0] || 'A')}</span>`, 't-lletres'],
+      ['sillabes', 'Síl·labes', `<span class="dibuix lletra-gran">${mostra(consonantsActives()[0] || 'M') + mostra(vocalsActives()[0] || 'A')}</span>`, 't-sillabes'],
+      ['paraules', 'Paraules', '<span class="dibuix">🍎</span>', 't-paraules'],
+      ['numeros', 'Números', '<span class="dibuix lletra-gran">123</span>', 't-numeros'],
+      ['compta', 'Compta', '<span class="dibuix">🐞</span>', 't-compta'],
+    ],
+  },
+  jocs: {
+    nom: 'Jocs', emoji: '🎲', classe: 't-jocs',
+    jocs: () => [
+      ['uneix', 'Uneix', `<span class="dibuix">${ICONA.uneix}</span>`, 't-uneix'],
+      ['globus', 'Globus', '<span class="dibuix">🎈</span>', 't-globus'],
+      ['parelles', 'Parelles', '<span class="dibuix">🃏</span>', 't-parelles'],
+      ['laberint', 'Laberint', '<span class="dibuix">🚗</span>', 't-laberint'],
+    ],
+  },
+};
+const PANTALLES = () => ({
+  lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules,
+  numeros: pantallaNumeros, compta: pantallaCompta, uneix: pantallaUneix,
+  globus: pantallaGlobus, parelles: pantallaParelles, laberint: pantallaLaberint,
+});
+
+// On porta el botó de la casa: des d'un joc, al seu menú; des d'un menú, a l'inici.
+let menuActual = null;
+const entraMenu = f => { menuActual = f; };
+
 function pantallaInici(saluda = false) {
   torn++;
   Veu.calla();
+  menuActual = null;
   repetir = () => Veu.diu(FRASES.benvinguda);
-  const exemple = mostra(consonantsActives()[0] || 'M') + mostra(vocalsActives()[0] || 'A');
   app.innerHTML = `
     ${barra({ inici: false, repetir: true, premis: true })}
-    <main class="inici">
-      <button class="targeta t-lletres" data-anar="lletres">
-        <span class="dibuix lletra-gran">${mostra(actives()[0] || 'A')}</span>
-        <span class="nom">Lletres</span>
-      </button>
-      <button class="targeta t-sillabes" data-anar="sillabes">
-        <span class="dibuix lletra-gran">${exemple}</span>
-        <span class="nom">Síl·labes</span>
-      </button>
-      <button class="targeta t-paraules" data-anar="paraules">
-        <span class="dibuix">🍎</span>
-        <span class="nom">Paraules</span>
-      </button>
-      <button class="targeta t-numeros" data-anar="numeros">
-        <span class="dibuix lletra-gran">123</span>
-        <span class="nom">Números</span>
-      </button>
-      <button class="targeta t-compta" data-anar="compta">
-        <span class="dibuix">🐞</span>
-        <span class="nom">Compta</span>
-      </button>
-      <button class="targeta t-uneix" data-anar="uneix">
-        <span class="dibuix">${ICONA.uneix}</span>
-        <span class="nom">Uneix</span>
-      </button>
-      <button class="targeta t-globus" data-anar="globus">
-        <span class="dibuix">🎈</span>
-        <span class="nom">Globus</span>
-      </button>
-      <button class="targeta t-parelles" data-anar="parelles">
-        <span class="dibuix">🃏</span>
-        <span class="nom">Parelles</span>
-      </button>
-      <button class="targeta t-laberint" data-anar="laberint">
-        <span class="dibuix">🚗</span>
-        <span class="nom">Laberint</span>
-      </button>
-      <button class="targeta t-futbol" data-anar="futbol">
-        <span class="dibuix">⚽</span>
-        <span class="nom">Futbol</span>
-      </button>
+    <main class="inici inici-seccions">
+      ${Object.entries(SECCIONS).map(([id, s]) => `
+        <button class="targeta ${s.classe}" data-anar="${id}"><span class="dibuix">${s.emoji}</span><span class="nom">${s.nom}</span></button>`).join('')}
+      <button class="targeta t-futbol" data-anar="futbol"><span class="dibuix">⚽</span><span class="nom">Futbol</span></button>
     </main>
     <button class="boto-adult" id="adult" aria-label="Adults: mantén premut">
       <svg class="anell" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/></svg>
       ${ICONA.engranatge}
     </button>`;
-
   app.querySelector('.inici').addEventListener('click', e => {
     const t = e.target.closest('[data-anar]');
     if (!t) return;
     const on = t.dataset.anar;
-    ({
-      lletres: pantallaLletres, sillabes: pantallaSillabes, paraules: pantallaParaules,
-      numeros: pantallaNumeros, compta: pantallaCompta, uneix: pantallaUneix,
-      globus: pantallaGlobus, parelles: pantallaParelles, laberint: pantallaLaberint, futbol: pantallaFutbolMenu,
-    })[on]();
+    if (on === 'futbol') return pantallaFutbolMenu();
+    Veu.diu(SECCIONS[on].nom);
+    pantallaSeccio(on);
   });
   preparaBotoAdult(document.getElementById('adult'));
   if (saluda) Veu.diu(FRASES.benvinguda);
+}
+
+function pantallaSeccio(id) {
+  torn++;
+  const S = SECCIONS[id];
+  entraMenu(() => pantallaSeccio(id));
+  repetir = () => Veu.diu(`${S.nom}. Tria un joc.`);
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="inici menu-seccio">
+      ${S.jocs().map(([joc, nom, dibuix, classe]) => `
+        <button class="targeta ${classe}" data-anar="${joc}">${dibuix}<span class="nom">${nom}</span></button>`).join('')}
+    </main>`;
+  app.querySelector('.inici').addEventListener('click', e => {
+    const t = e.target.closest('[data-anar]');
+    if (t) PANTALLES()[t.dataset.anar]();
+  });
 }
 
 /* ---------- 1. Lletres ---------- */
@@ -1902,11 +1915,13 @@ const RONDES_MINIJOC = 5;
 function pantallaFutbolMenu() {
   torn++;
   Veu.calla();
+  entraMenu(pantallaFutbolMenu);
   repetir = () => Veu.diu('Tria un joc de futbol. Tu ets el lateral esquerre, el número tres.');
   app.innerHTML = `
     ${barra({ repetir: true })}
-    <main class="menu-futbol">
-      <button class="targeta t-futbol gran" data-anar="jugades"><span class="dibuix">⚽</span><span class="nom">Jugades</span></button>
+    <main class="menu-futbol menu-seccio">
+      <button class="targeta t-futbol" data-anar="jugades"><span class="dibuix">⚽</span><span class="nom">Jugades</span></button>
+      <button class="targeta t-pissarra" data-anar="pissarra"><span class="dibuix">📋</span><span class="nom">Pissarra</span></button>
       ${Object.entries(MINIJOCS).map(([id, m]) => `
         <button class="targeta t-lateral" data-anar="${id}"><span class="dibuix">${m.emoji}</span><span class="nom">${m.nom}</span></button>`).join('')}
     </main>`;
@@ -1915,6 +1930,7 @@ function pantallaFutbolMenu() {
     if (!t) return;
     const on = t.dataset.anar;
     if (on === 'jugades') { Veu.diu('Jugades'); return pantallaFutbol(); }
+    if (on === 'pissarra') { Veu.diu('Pissarra'); return pantallaPissarra(); }
     Veu.diu(MINIJOCS[on].diu);
     pantallaLateral(on);
   });
@@ -2366,6 +2382,97 @@ function miniPressiona(m) {
   repetir = () => Veu.diu("Pressiona! Posa't una mica per dins del contrari per robar-li la pilota.");
   Veu.diu("Pressiona! Tanca'l per dins.");
   setTimeout(() => requestAnimationFrame(ara => { abans = ara; roda(ara); }), 600);
+}
+
+/* ---------- Pissarra d'entrenador (futbol 7) ---------- */
+// Posicions inicials (camp de 1000 × 620; la nostra porteria a l'esquerra). Porter + 3-2-1.
+const PISSARRA_INICI = {
+  blaus: [[45, 310], [210, 130], [180, 310], [210, 490], [390, 200], [390, 420], [480, 310]],
+  vermells: [[955, 310], [790, 130], [820, 310], [790, 490], [610, 200], [610, 420], [520, 310]],
+  pilota: [500, 250],
+};
+
+function pantallaPissarra() {
+  torn++;
+  const elTorn = torn;
+  Veu.calla();
+  repetir = () => Veu.diu("Pissarra. Mou els jugadors i la pilota amb el dit.");
+  const desat = D().pissarra || JSON.parse(JSON.stringify(PISSARRA_INICI));
+  if (desat.contraris === undefined) desat.contraris = true;
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="futbol">
+      <div class="retol">
+        <button class="boto-menu" aria-label="Menú de futbol">☰</button>
+        <span class="retol-emoji">📋</span><b>Pissarra</b>
+        <button class="boto-eina" data-eina="contraris" aria-label="Mostrar o amagar contraris">👁 Vermells</button>
+        <button class="boto-eina" data-eina="reinicia" aria-label="Tornar a la posició inicial">↺</button>
+      </div>
+      <div class="zona-joc"></div>
+    </main>`;
+  app.querySelector('.boto-menu').addEventListener('click', pantallaFutbolMenu);
+  const zona = app.querySelector('.zona-joc');
+  const C = dibuixaCamp(zona, elTorn);
+  const { svg, aMon, dist, posa, fesJugador, pilota } = C;
+  svg.classList.add('pissarra');
+  const blaus = desat.blaus.map(([x, y], i) => fesJugador('.blaus', `${i ? '' : 'porter'} peca`, x, y, i + 1));
+  const vermells = desat.vermells.map(([x, y], i) => fesJugador('.vermells', `${i ? '' : 'porter'} peca`, x, y, i + 1));
+  Object.assign(pilota, { x: desat.pilota[0], y: desat.pilota[1] });
+  posa(pilota);
+  const mostraContraris = () => {
+    svg.querySelector('.vermells').style.display = desat.contraris ? '' : 'none';
+    app.querySelector('[data-eina=contraris]').classList.toggle('apagat', !desat.contraris);
+  };
+  mostraContraris();
+  const desa = () => {
+    D().pissarra = {
+      blaus: blaus.map(j => [Math.round(j.x), Math.round(j.y)]),
+      vermells: vermells.map(j => [Math.round(j.x), Math.round(j.y)]),
+      pilota: [Math.round(pilota.x), Math.round(pilota.y)],
+      contraris: desat.contraris,
+    };
+    Estat.desa();
+  };
+  app.querySelector('.retol').addEventListener('click', e => {
+    const b = e.target.closest('[data-eina]');
+    if (!b) return;
+    if (b.dataset.eina === 'contraris') { desat.contraris = !desat.contraris; mostraContraris(); desa(); }
+    if (b.dataset.eina === 'reinicia') {
+      PISSARRA_INICI.blaus.forEach(([x, y], i) => Object.assign(blaus[i], { x, y }));
+      PISSARRA_INICI.vermells.forEach(([x, y], i) => Object.assign(vermells[i], { x, y }));
+      Object.assign(pilota, { x: PISSARRA_INICI.pilota[0], y: PISSARRA_INICI.pilota[1] });
+      [...blaus, ...vermells, pilota].forEach(posa);
+      desa();
+    }
+  });
+  // Arrossegar: la pilota té preferència si el dit hi és a sobre.
+  const agafats = new Map();
+  svg.addEventListener('pointerdown', e => {
+    const p = aMon(e);
+    const peces = [pilota, ...blaus, ...(desat.contraris ? vermells : [])];
+    const peca = peces.find(q => q === pilota && dist(q, p) < 40) || peces.filter(q => q !== pilota).sort((a, b) => dist(a, p) - dist(b, p))[0];
+    if (!peca || dist(peca, p) > 60) return;
+    svg.setPointerCapture(e.pointerId);
+    agafats.set(e.pointerId, peca);
+    peca.g.classList.add('agafat');
+  });
+  svg.addEventListener('pointermove', e => {
+    const peca = agafats.get(e.pointerId);
+    if (!peca) return;
+    const p = aMon(e);
+    peca.x = Math.max(-10, Math.min(CAMP.L + 10, p.x));
+    peca.y = Math.max(-10, Math.min(CAMP.A + 10, p.y));
+    posa(peca);
+  });
+  const deixa = e => {
+    const peca = agafats.get(e.pointerId);
+    if (!peca) return;
+    agafats.delete(e.pointerId);
+    peca.g.classList.remove('agafat');
+    desa();
+  };
+  svg.addEventListener('pointerup', deixa);
+  svg.addEventListener('pointercancel', deixa);
 }
 
 /* ---------- Mode adult ---------- */

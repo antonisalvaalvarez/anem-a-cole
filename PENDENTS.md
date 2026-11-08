@@ -24,6 +24,10 @@
 ## Per provar (versió 12)
 - [ ] Minijocs del lateral esquerre en primera persona: si són divertits, si van massa ràpid o massa lent, i si s'entén què cal fer.
 
+## Per provar (versió 16)
+- [ ] Inici amb 3 seccions (Col·legi, Jocs, Futbol).
+- [ ] Pissarra de futbol 7: si cal fletxes per dibuixar moviments o guardar més d'una jugada.
+
 ## Per fer a l'app
 - [ ] Si a classe fan servir el so de la lletra: gravar sons (la veu automàtica no els sap fer).
 - [ ] Si fan lletra lligada: afegir una lletra escolar lligada (cal un fitxer de font amb llicència lliure).

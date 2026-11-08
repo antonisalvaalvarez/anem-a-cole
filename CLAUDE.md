@@ -27,6 +27,8 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 - Si mai cal guardar dades privades, preguntar-ho abans.
 
 ## Jocs
+- L'inici té 3 seccions: 🎒 Col·legi (Lletres, Síl·labes, Paraules, Números, Compta), 🎲 Jocs (Uneix, Globus, Parelles, Laberint) i ⚽ Futbol. La casa d'un joc torna al seu menú; la d'un menú, a l'inici.
+- Futbol inclou una Pissarra d'entrenador de futbol 7 (7 blaus, 7 vermells i la pilota, tot arrossegable; reinici i amagar vermells; es guarda a la tablet).
 - Lletres, Síl·labes, Paraules.
 - Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit en ordre sense creuar línies; a dalt, fila de números que es pinten quan es fan; nivells amb corbes obligatòries i fins al 15; si es creuen, "Tornem-hi!", mai "has perdut").
 - Globus (explotar els globus en ordre mentre pugen; si se'n va el que busca, torna a sortir) i Parelles (memòria: número amb quantitat o lletra amb dibuix).

@@ -1,6 +1,6 @@
 /* Guarda l'app a la tablet perquè funcioni sense internet.
    Quan canviïs algun fitxer, puja el número de VERSIO. */
-const VERSIO = 'v15';
+const VERSIO = 'v16';
 const FITXERS = [
   './',
   'index.html',
