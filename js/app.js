@@ -2592,43 +2592,43 @@ function miniPressiona(m) {
 }
 
 /* ---------- Pissarra d'entrenador (futbol 7) ---------- */
-// On s'han de moure els nostres quan ataquem, segons on és la pilota i qui la té (índex a blaus).
-// 1 porter; 2 defensa esquerre, 3 defensa dret; 4 mig esquerre, 5 mig centre, 6 mig dret; 7 davanter.
-// Idees: obrir-se (amplitud), algú lluny (profunditat), el del mig a prop per ajudar i els defenses darrere de la pilota.
+// Sistema 3-2-1: 1 porter; 2 lateral esquerre, 3 central, 4 lateral dret; 5 mig esquerre, 6 mig dret; 7 davanter.
+// La nostra porteria és a x=0 i la banda esquerra a dalt (y petita).
+
+// Atac: on s'han de moure els nostres segons on és la pilota i qui la té (índex a blaus).
+// Idees: obrir-se (amplitud), algú lluny (profunditat), un a prop per ajudar i algú darrere de la pilota.
 function posicionsAtac(b, te) {
   const { A, L } = CAMP;
   const lim = (v, a, c) => Math.max(a, Math.min(c, v));
-  const dreta = b.y > A / 2; // la pilota és a la banda dreta (y gran)
-  const prop = y => (dreta ? A - y : y); // distància a la línia de la banda de la pilota
+  const dreta = b.y > A / 2; // la pilota és a la banda dreta
+  const prop = y => (dreta ? A - y : y); // a tantes unitats de la línia de la banda de la pilota
   const lluny = y => (dreta ? y : A - y);
-  const enrere = b.x < 360 || te <= 2; // la té el porter o un defensa: sortim jugant
+  const latProp = dreta ? 3 : 1, latLluny = dreta ? 1 : 3;
+  const migProp = dreta ? 5 : 4, migLluny = dreta ? 4 : 5;
   const p = [];
   p[0] = [40, lim(A / 2 + (b.y - A / 2) * 0.2, A / 2 - 60, A / 2 + 60)];
-  if (enrere) {
-    // Defenses oberts a cada banda; el del costat de la pilota la pot tenir.
-    p[1] = [lim(b.x, 120, 330), 75];
-    p[2] = [lim(b.x, 120, 330), A - 75];
-    p[4] = [lim(b.x + 120, 260, 520), lim(A / 2 + (b.y - A / 2) * 0.35, 150, A - 150)]; // el del mig s'acosta per ajudar
-    const migProp = dreta ? 5 : 3, migLluny = dreta ? 3 : 5;
-    p[migProp] = [lim(b.x + 190, 330, 640), prop(65)]; // el de banda s'obre i puja
-    p[migLluny] = [lim(b.x + 280, 420, 720), lluny(65)]; // el de l'altra banda, ben obert
+  if (b.x < 360 || te <= 3) {
+    // Sortim des de darrere: laterals ben oberts, el central darrere de la pilota.
+    p[1] = [lim(b.x + 10, 130, 340), 70];
+    p[3] = [lim(b.x + 10, 130, 340), A - 70];
+    p[2] = [lim(b.x - 60, 100, 280), lim(A / 2 + (b.y - A / 2) * 0.25, A / 2 - 90, A / 2 + 90)];
+    p[migProp] = [lim(b.x + 150, 300, 560), prop(170)]; // el mig de la banda s'acosta per ajudar
+    p[migLluny] = [lim(b.x + 230, 380, 640), lluny(190)]; // l'altre mig, per dins a l'altre costat
     p[6] = [lim(b.x + 400, 600, L - 170), lim(A / 2 + (b.y - A / 2) * 0.2, 200, A - 200)]; // davanter lluny
   } else {
-    // Pilota endavant: els defenses es queden darrere de la pilota, per si de cas.
-    p[1] = [lim(b.x - 230, 130, 450), A / 2 - 120];
-    p[2] = [lim(b.x - 230, 130, 450), A / 2 + 120];
-    p[4] = [lim(b.x - 80, 250, 700), lim(A / 2 + (b.y - A / 2) * 0.3, 160, A - 160)];
-    const migProp = dreta ? 5 : 3, migLluny = dreta ? 3 : 5;
-    p[migProp] = [lim(b.x + 120, 400, L - 90), prop(60)];
-    p[migLluny] = [lim(b.x + 140, 420, L - 120), lluny(70)];
+    // Pilota endavant: el central i el lateral de l'altra banda es queden darrere, per si de cas.
+    p[2] = [lim(b.x - 260, 130, 420), A / 2];
+    p[latLluny] = [lim(b.x - 200, 150, 480), lluny(140)];
+    p[latProp] = [lim(b.x - 70, 200, 650), prop(65)]; // el lateral de la banda acompanya per fora
+    p[migProp] = [lim(b.x + 110, 400, L - 100), prop(150)];
+    p[migLluny] = [lim(b.x + 130, 420, L - 120), lluny(200)];
     p[6] = [lim(b.x + 200, 550, L - 120), lim(A / 2 + (b.y - A / 2) * 0.2, 200, A - 200)];
   }
   return p;
 }
 
-// On s'ha de posar l'equip en defensa segons on és la pilota (la nostra porteria a x=0).
+// Defensa: on s'ha de posar l'equip segons on és la pilota.
 // Bloc compacte entre la pilota i la porteria, desplaçat cap al costat de la pilota.
-// Jugadors: 1 porter; 2 i 3 defenses; 4, 5 i 6 mitjos; 7 davanter.
 function posicionsDefensa(b) {
   const { A } = CAMP;
   const lim = (v, a, c) => Math.max(a, Math.min(c, v));
@@ -2638,39 +2638,38 @@ function posicionsDefensa(b) {
   const xf = Math.max(xm + 40, lim(Math.min(xm + 110, b.x - 80), 250, 520)); // davanter, entre els mitjos i la pilota
   return [
     [45, lim(A / 2 + (b.y - A / 2) * 0.3, A / 2 - 70, A / 2 + 70)],
-    [xd, cy - 80], [xd, cy + 80],
-    [xm, cy - 135], [xm, cy], [xm, cy + 135],
+    [xd, cy - 110], [xd - 15, cy], [xd, cy + 110],
+    [xm, cy - 85], [xm, cy + 85],
     [xf, lim((cy + b.y) / 2, 120, A - 120)],
   ];
 }
 
-// Posicions inicials (camp de 1000 × 620; la nostra porteria a l'esquerra). Porter + 3-2-1.
 const PISSARRA_INICI = {
   blaus: [[45, 310], [210, 130], [180, 310], [210, 490], [390, 200], [390, 420], [480, 310]],
   vermells: [[955, 310], [790, 130], [820, 310], [790, 490], [610, 200], [610, 420], [520, 310]],
   pilota: [500, 250],
 };
-// Posicions preparades per explicar idees (porter + 2 defenses + 3 mitjos + 1 davanter).
+// Posicions preparades per explicar idees (3-2-1: porter + 3 defenses + 2 mitjos + 1 davanter).
 const PISSARRA_POSICIONS = {
   inici: { nom: 'Inici', emoji: '↺', ...PISSARRA_INICI },
-  // El porter té la pilota: els defenses s'obren a les bandes, el pivot baixa, els de banda oberts i amunt.
+  // El porter té la pilota: els laterals s'obren, el central davant del porter, els mitjos s'ofereixen.
   sortida: {
     nom: 'Sortida', emoji: '🧤',
-    blaus: [[45, 310], [150, 90], [150, 530], [240, 310], [400, 60], [400, 560], [620, 310]],
+    blaus: [[45, 310], [150, 70], [140, 310], [150, 550], [320, 190], [320, 430], [620, 310]],
     vermells: [[955, 310], [700, 200], [700, 420], [520, 310], [430, 180], [430, 440], [300, 300]],
     pilota: [75, 310],
   },
-  // Atacant: ben oberts per la banda, un amunt i l'equip acompanya.
+  // Atacant: obrim el camp, algú lluny i el central darrere per si de cas.
   atac: {
     nom: 'Atac', emoji: '⚽',
-    blaus: [[130, 310], [330, 150], [330, 470], [500, 310], [720, 55], [700, 560], [850, 300]],
+    blaus: [[130, 310], [430, 65], [330, 310], [430, 555], [620, 200], [620, 420], [840, 310]],
     vermells: [[955, 310], [850, 220], [850, 400], [770, 310], [690, 190], [690, 430], [600, 310]],
-    pilota: [745, 70],
+    pilota: [455, 75],
   },
   // Defensant: tots junts i per dins, entre la pilota i la porteria.
   defensa: {
     nom: 'Defensa', emoji: '🛡️',
-    blaus: [[45, 310], [150, 240], [150, 380], [250, 180], [250, 310], [250, 440], [370, 310]],
+    blaus: [[45, 310], [150, 200], [135, 310], [150, 420], [260, 230], [260, 390], [370, 310]],
     vermells: [[955, 310], [600, 200], [600, 420], [450, 310], [330, 110], [330, 310], [330, 510]],
     pilota: [355, 320],
   },
