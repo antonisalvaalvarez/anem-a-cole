@@ -2129,6 +2129,7 @@ function pantallaFutbolMenu() {
     <main class="menu-futbol menu-seccio">
       <button class="targeta t-futbol" data-anar="jugades"><span class="dibuix">⚽</span><span class="nom">Jugades</span></button>
       <button class="targeta t-pissarra" data-anar="pissarra"><span class="dibuix">📋</span><span class="nom">Pissarra</span></button>
+      <button class="targeta t-bascula" data-anar="bascula"><span class="dibuix">🧠</span><span class="nom">Bascula</span></button>
       ${Object.entries(MINIJOCS).map(([id, m]) => `
         <button class="targeta t-lateral" data-anar="${id}"><span class="dibuix">${m.emoji}</span><span class="nom">${m.nom}</span></button>`).join('')}
     </main>`;
@@ -2138,6 +2139,7 @@ function pantallaFutbolMenu() {
     const on = t.dataset.anar;
     if (on === 'jugades') { Veu.diu('Jugades'); return pantallaFutbol(); }
     if (on === 'pissarra') { Veu.diu('Pissarra'); return pantallaPissarra(); }
+    if (on === 'bascula') { Veu.diu('Bascula'); return pantallaBascula(); }
     Veu.diu(MINIJOCS[on].diu);
     pantallaLateral(on);
   });
@@ -2834,6 +2836,98 @@ function pantallaPissarra() {
   };
   svg.addEventListener('pointerup', deixa);
   svg.addEventListener('pointercancel', deixa);
+}
+
+/* ---------- Bascula: mous el contrari amb la pilota i tot l'equip es mou alhora ---------- */
+function pantallaBascula() {
+  torn++;
+  const elTorn = torn;
+  Veu.calla();
+  app.innerHTML = `
+    ${barra({ repetir: true })}
+    <main class="futbol">
+      <div class="retol">
+        <button class="boto-menu" aria-label="Menú de futbol">☰</button>
+        <span class="retol-emoji">🧠</span><b>Bascula</b>
+      </div>
+      <div class="zona-joc"></div>
+    </main>`;
+  app.querySelector('.boto-menu').addEventListener('click', pantallaFutbolMenu);
+  const C = dibuixaCamp(app.querySelector('.zona-joc'), elTorn);
+  const { svg, aMon, dist, posa, fesJugador, pilota, capaZones } = C;
+  svg.insertAdjacentHTML('afterbegin', '<defs><marker id="punta-b" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker></defs>');
+  const atacant = fesJugador('.vermells', 'peca', 520, CAMP.A / 2, 10);
+  const enganxa = () => { pilota.x = atacant.x - 30; pilota.y = atacant.y + 10; posa(pilota); };
+  enganxa();
+  const inici = posicionsDefensa(pilota);
+  const blaus = inici.map(([x, y], i) => fesJugador('.blaus', i ? '' : 'porter', x, y, i + 1));
+  let pressors = [];
+  const frase = "Mou el jugador vermell amb la pilota. Mira com bascula tot l'equip i quins dos van a pressionar.";
+  repetir = () => Veu.diu(frase);
+
+  // Cada fotograma, cada blau s'acosta al seu lloc: així es veu com es mouen tots alhora.
+  const objectius = () => {
+    const pos = posicionsDefensa(pilota);
+    const nous = [1, 2, 3, 4, 5, 6].sort((a, b) => Math.hypot(pos[a][0] - atacant.x, pos[a][1] - atacant.y) - Math.hypot(pos[b][0] - atacant.x, pos[b][1] - atacant.y)).slice(0, 2);
+    pressors = nous;
+    // Els dos que pressionen surten cap al contrari (s'hi queden a prop, un de cara i l'altre tancant per dins).
+    const dins = atacant.y < CAMP.A / 2 ? 1 : -1;
+    nous.forEach((i, n) => {
+      const [x, y] = pos[i];
+      const tx = atacant.x - 85, ty = atacant.y + (n ? dins * 85 : 0);
+      pos[i] = [x + (tx - x) * 0.6, y + (ty - y) * 0.6];
+    });
+    return pos;
+  };
+  let abans = performance.now();
+  const roda = ara => {
+    if (elTorn !== torn) return;
+    const dt = Math.min(0.05, (ara - abans) / 1000);
+    abans = ara;
+    const pos = objectius();
+    blaus.forEach((j, i) => {
+      j.x += (pos[i][0] - j.x) * Math.min(1, dt * 3.5);
+      j.y += (pos[i][1] - j.y) * Math.min(1, dt * 3.5);
+      posa(j);
+      j.g.classList.toggle('triat', pressors.includes(i));
+    });
+    capaZones.innerHTML = pressors.map(i => {
+      const j = blaus[i], d = dist(j, atacant) || 1;
+      if (d < 60) return '';
+      const x1 = j.x + (atacant.x - j.x) * 36 / d, y1 = j.y + (atacant.y - j.y) * 36 / d;
+      const x2 = j.x + (atacant.x - j.x) * (d - 40) / d, y2 = j.y + (atacant.y - j.y) * (d - 40) / d;
+      return `<path class="fletxa-pressio" d="M${x1},${y1}L${x2},${y2}" marker-end="url(#punta-b)"/>`;
+    }).join('');
+    requestAnimationFrame(roda);
+  };
+  requestAnimationFrame(roda);
+
+  let agafat = null;
+  svg.addEventListener('pointerdown', e => {
+    const p = aMon(e);
+    if (dist(atacant, p) > 80 && dist(pilota, p) > 60) return;
+    svg.setPointerCapture(e.pointerId);
+    agafat = e.pointerId;
+    atacant.g.classList.add('agafat');
+  });
+  svg.addEventListener('pointermove', e => {
+    if (agafat !== e.pointerId) return;
+    const p = aMon(e);
+    atacant.x = Math.max(60, Math.min(CAMP.L - 40, p.x));
+    atacant.y = Math.max(25, Math.min(CAMP.A - 25, p.y));
+    posa(atacant);
+    enganxa();
+  });
+  const deixa = e => {
+    if (agafat !== e.pointerId) return;
+    agafat = null;
+    atacant.g.classList.remove('agafat');
+    const [a, b] = pressors.map(i => i + 1);
+    Veu.diu(`Hi van el ${NUMEROS[a]} i el ${NUMEROS[b]}.`);
+  };
+  svg.addEventListener('pointerup', deixa);
+  svg.addEventListener('pointercancel', deixa);
+  Veu.diu(frase);
 }
 
 /* ---------- Mode adult ---------- */

@@ -459,11 +459,12 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .retol .etiqueta { font-size: 3vmin; color: var(--lila); font-weight: 700; padding: 0 2vmin; }
 .menu-futbol { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 3vmin; padding: 3vmin 5vmin 5vmin; max-width: 150vmin; width: 100%; margin: 0 auto; }
 .menu-futbol .gran { grid-column: 1 / -1; }
-@media (orientation: landscape) { .menu-futbol { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; } }
+@media (orientation: landscape) { .menu-futbol { grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr 1fr; } }
 .menu-futbol .targeta .dibuix { font-size: 12vmin; }
 .menu-futbol .targeta .nom { font-size: 4vmin; text-align: center; padding: 0 1vmin; }
 .t-lateral { background: #2F6FED; }
 .t-pissarra { background: #2B2D42; }
+.t-bascula { background: #E5484D; }
 .t-collegi { background: var(--coral); }
 .t-jocs { background: var(--lila); }
 .inici.inici-seccions { grid-template-columns: 1fr; align-content: center; }
