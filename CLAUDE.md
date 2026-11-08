@@ -5,7 +5,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 ## Format
 - Web estàtica publicada amb GitHub Pages des de `main` (arrel). Sense servidor ni eines de compilació.
 - Ha de poder-se afegir a la pantalla d'inici, obrir-se a pantalla completa i funcionar sense internet (`sw.js`).
-- **Quan es canvia qualsevol fitxer, cal pujar `VERSIO` a `sw.js`**, si no la tablet continua amb la versió vella.
+- **Quan es canvia qualsevol fitxer, cal pujar `VERSIO` a `sw.js`.** El `sw.js` agafa primer la versió d'internet i, sense connexió, la guardada.
 
 ## On és cada cosa
 - `js/dades.js`: lletres, paraules, números, adhesius, frases de la veu i lletres inicials. És el fitxer per canviar continguts.

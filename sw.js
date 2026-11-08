@@ -1,6 +1,6 @@
 /* Guarda l'app a la tablet perquè funcioni sense internet.
    Quan canviïs algun fitxer, puja el número de VERSIO. */
-const VERSIO = 'v24';
+const VERSIO = 'v25';
 const FITXERS = [
   './',
   'index.html',
@@ -27,10 +27,15 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Primer mira la còpia guardada; si no hi és, la demana a internet.
+// Si hi ha internet, agafa sempre la versió nova (i la guarda); si no n'hi ha, fa servir la còpia guardada.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request))
+    fetch(e.request, { cache: 'no-cache' })
+      .then(r => {
+        if (r.ok) { const copia = r.clone(); caches.open(VERSIO).then(c => c.put(e.request, copia)); }
+        return r;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });

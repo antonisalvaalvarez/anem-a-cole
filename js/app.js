@@ -3176,5 +3176,9 @@ function pantallaAdult() {
 pantallaEntrada();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
+  // Quan arriba una versió nova, es recarrega sola si som a la pantalla d'entrada.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (document.getElementById('play')) location.reload();
+  });
 }
