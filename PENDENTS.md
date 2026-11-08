@@ -30,6 +30,7 @@
 - [ ] Jugada "Surt des de darrere": si l'entén i si s'entén la variant del pivot lliure.
 
 ## Per provar (versió 20)
+- [ ] Pissarra, botó ⚔️ Ataquem: si els moviments (obrir-se, el del mig a prop, davanter lluny, defenses darrere) són com ho voleu ensenyar.
 - [ ] Pissarra, botó 🧠 Bascula: si la col·locació en defensa i els dos que pressionen són com ho voleu ensenyar (es pot ajustar).
 
 ## Per fer a l'app

@@ -481,6 +481,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .punts { display: flex; gap: 1vmin; padding: 0 2vmin; }
 .punts i { width: 3vmin; height: 3vmin; border-radius: 50%; background: #E9E2D6; }
 .punts i.fet { background: var(--verd); }
+.camp .zones .fletxa-moviment { fill: none; stroke: #FFFFFF; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 14 10; animation: none; opacity: 0.9; }
 .camp .zones .fletxa-pressio { fill: none; stroke: #FFD23F; stroke-width: 9; stroke-linecap: round; stroke-dasharray: 18 12; animation: none; }
 .camp .zones .carril { fill: none; stroke: rgba(255,255,255,0.7); stroke-width: 6; stroke-dasharray: 20 14; animation: none; }
 .camp .zones .opcio-zona { fill: rgba(255,255,255,0.2); stroke: #FFE29A; }

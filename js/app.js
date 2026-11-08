@@ -2592,6 +2592,40 @@ function miniPressiona(m) {
 }
 
 /* ---------- Pissarra d'entrenador (futbol 7) ---------- */
+// On s'han de moure els nostres quan ataquem, segons on és la pilota i qui la té (índex a blaus).
+// 1 porter; 2 defensa esquerre, 3 defensa dret; 4 mig esquerre, 5 mig centre, 6 mig dret; 7 davanter.
+// Idees: obrir-se (amplitud), algú lluny (profunditat), el del mig a prop per ajudar i els defenses darrere de la pilota.
+function posicionsAtac(b, te) {
+  const { A, L } = CAMP;
+  const lim = (v, a, c) => Math.max(a, Math.min(c, v));
+  const dreta = b.y > A / 2; // la pilota és a la banda dreta (y gran)
+  const prop = y => (dreta ? A - y : y); // distància a la línia de la banda de la pilota
+  const lluny = y => (dreta ? y : A - y);
+  const enrere = b.x < 360 || te <= 2; // la té el porter o un defensa: sortim jugant
+  const p = [];
+  p[0] = [40, lim(A / 2 + (b.y - A / 2) * 0.2, A / 2 - 60, A / 2 + 60)];
+  if (enrere) {
+    // Defenses oberts a cada banda; el del costat de la pilota la pot tenir.
+    p[1] = [lim(b.x, 120, 330), 75];
+    p[2] = [lim(b.x, 120, 330), A - 75];
+    p[4] = [lim(b.x + 120, 260, 520), lim(A / 2 + (b.y - A / 2) * 0.35, 150, A - 150)]; // el del mig s'acosta per ajudar
+    const migProp = dreta ? 5 : 3, migLluny = dreta ? 3 : 5;
+    p[migProp] = [lim(b.x + 190, 330, 640), prop(65)]; // el de banda s'obre i puja
+    p[migLluny] = [lim(b.x + 280, 420, 720), lluny(65)]; // el de l'altra banda, ben obert
+    p[6] = [lim(b.x + 400, 600, L - 170), lim(A / 2 + (b.y - A / 2) * 0.2, 200, A - 200)]; // davanter lluny
+  } else {
+    // Pilota endavant: els defenses es queden darrere de la pilota, per si de cas.
+    p[1] = [lim(b.x - 230, 130, 450), A / 2 - 120];
+    p[2] = [lim(b.x - 230, 130, 450), A / 2 + 120];
+    p[4] = [lim(b.x - 80, 250, 700), lim(A / 2 + (b.y - A / 2) * 0.3, 160, A - 160)];
+    const migProp = dreta ? 5 : 3, migLluny = dreta ? 3 : 5;
+    p[migProp] = [lim(b.x + 120, 400, L - 90), prop(60)];
+    p[migLluny] = [lim(b.x + 140, 420, L - 120), lluny(70)];
+    p[6] = [lim(b.x + 200, 550, L - 120), lim(A / 2 + (b.y - A / 2) * 0.2, 200, A - 200)];
+  }
+  return p;
+}
+
 // On s'ha de posar l'equip en defensa segons on és la pilota (la nostra porteria a x=0).
 // Bloc compacte entre la pilota i la porteria, desplaçat cap al costat de la pilota.
 // Jugadors: 1 porter; 2 i 3 defenses; 4, 5 i 6 mitjos; 7 davanter.
@@ -2660,6 +2694,7 @@ function pantallaPissarra() {
         ${Object.entries(PISSARRA_POSICIONS).map(([id, p]) => `<button class="boto-eina" data-eina="posicio" data-posicio="${id}">${p.emoji} ${p.nom}</button>`).join('')}
         <button class="boto-eina" data-eina="contraris" aria-label="Mostrar o amagar contraris">👁 Vermells</button>
         <button class="boto-eina" data-eina="auto" aria-label="Defensa automàtica">🧠 Bascula</button>
+        <button class="boto-eina" data-eina="atac" aria-label="Atac automàtic">⚔️ Ataquem</button>
       </div>
       <div class="zona-joc"></div>
     </main>`;
@@ -2684,12 +2719,13 @@ function pantallaPissarra() {
       pilota: [Math.round(pilota.x), Math.round(pilota.y)],
       contraris: desat.contraris,
       auto: desat.auto,
+      atac: desat.atac,
     };
     Estat.desa();
   };
 
   // Defensa automàtica: l'equip bascula cap a la pilota i els dos més a prop hi van (fletxes).
-  svg.insertAdjacentHTML('afterbegin', '<defs><marker id="punta-fletxa" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker></defs>');
+  svg.insertAdjacentHTML('afterbegin', '<defs><marker id="punta-fletxa" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFD23F"/></marker><marker id="punta-blanca" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFFFFF"/></marker></defs>');
   const dibuixaFletxes = () => {
     if (!desat.auto) { C.capaZones.innerHTML = ''; blaus.forEach(j => j.g.classList.remove('triat')); return; }
     const pressors = blaus.slice(1).sort((a, b) => dist(a, pilota) - dist(b, pilota)).slice(0, 2);
@@ -2712,15 +2748,43 @@ function pantallaPissarra() {
     }
     dibuixaFletxes();
   };
-  const marcaAuto = () => app.querySelector('[data-eina=auto]').classList.toggle('apagat', !desat.auto);
+  const marcaAuto = () => {
+    app.querySelector('[data-eina=auto]').classList.toggle('apagat', !desat.auto);
+    app.querySelector('[data-eina=atac]').classList.toggle('apagat', !desat.atac);
+  };
+  // Atac automàtic: qui té la pilota i on s'han de moure els altres (amb fletxes del moviment).
+  const aplicaAtac = async () => {
+    if (!desat.atac) return;
+    const té = blaus.reduce((m, j) => (dist(j, pilota) < dist(m, pilota) ? j : m));
+    const pos = posicionsAtac(pilota, blaus.indexOf(té));
+    blaus.forEach(j => j.g.classList.toggle('triat', j === té));
+    C.capaZones.innerHTML = blaus.map((j, i) => {
+      const [x, y] = pos[i], d = Math.hypot(x - j.x, y - j.y);
+      if (j === té || d < 60) return '';
+      const x1 = j.x + (x - j.x) * 36 / d, y1 = j.y + (y - j.y) * 36 / d;
+      const x2 = j.x + (x - j.x) * (d - 30) / d, y2 = j.y + (y - j.y) * (d - 30) / d;
+      return `<path class="fletxa-moviment" d="M${x1},${y1}L${x2},${y2}" marker-end="url(#punta-blanca)"/>`;
+    }).join('');
+    await Promise.all(blaus.map((j, i) => (j === té ? C.mou(j, pilota.x - 28, pilota.y, 400) : C.mou(j, pos[i][0], pos[i][1], 900))));
+    desa();
+  };
   marcaAuto();
   dibuixaFletxes();
   app.querySelector('.eines-pissarra').addEventListener('click', async e => {
     const b = e.target.closest('[data-eina]');
     if (!b) return;
     if (b.dataset.eina === 'contraris') { desat.contraris = !desat.contraris; mostraContraris(); desa(); }
+    if (b.dataset.eina === 'atac') {
+      desat.atac = !desat.atac;
+      if (desat.atac) { desat.auto = false; dibuixaFletxes(); }
+      else { C.capaZones.innerHTML = ''; blaus.forEach(j => j.g.classList.remove('triat')); }
+      marcaAuto();
+      if (desat.atac) { Veu.diu('Ataquem! Deixa la pilota a prop d\'un blau i mira on van els altres.'); await aplicaAtac(); }
+      desa();
+    }
     if (b.dataset.eina === 'auto') {
       desat.auto = !desat.auto;
+      if (desat.auto) desat.atac = false;
       marcaAuto();
       if (desat.auto) Veu.diu("Mou la pilota i mira com bascula l'equip. Les fletxes diuen qui va a pressionar.");
       await aplicaAuto(true);
@@ -2736,6 +2800,7 @@ function pantallaPissarra() {
         C.mou(pilota, P.pilota[0], P.pilota[1], 700),
       ]);
       await aplicaAuto(true);
+      await aplicaAtac();
       desa();
     }
   });
@@ -2758,12 +2823,14 @@ function pantallaPissarra() {
     peca.y = Math.max(-10, Math.min(CAMP.A + 10, p.y));
     posa(peca);
     if (desat.auto) { if (peca === pilota) aplicaAuto(false); else dibuixaFletxes(); }
+    if (desat.atac && peca === pilota) C.capaZones.innerHTML = '';
   });
   const deixa = e => {
     const peca = agafats.get(e.pointerId);
     if (!peca) return;
     agafats.delete(e.pointerId);
     peca.g.classList.remove('agafat');
+    if (desat.atac && peca === pilota) aplicaAtac();
     desa();
   };
   svg.addEventListener('pointerup', deixa);
