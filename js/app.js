@@ -1117,6 +1117,7 @@ const JUGADES = {
   xut: { emoji: '🥅', retol: 'Xuta on no hi ha el porter' },
   corner: { emoji: '🚩', retol: 'Córner assajat' },
   passades: { emoji: '🔢', retol: "Passa de l'1 al 5" },
+  sortida: { emoji: '🧤', retol: 'Surt des de darrere' },
 };
 const DEMOS_PER_JUGADA = 1;
 const CAMP = { L: 1000, A: 620 }; // la nostra porteria a x=0
@@ -1376,6 +1377,101 @@ function jugadaCamp(k) {
     };
     if (demo) diu(frase).then(async () => { await demoToca(esquerra); if (elTorn === torn) quanToca(esquerra); });
     else Veu.diu(frase);
+    return;
+  }
+
+  /* --- Surt des de darrere --- */
+  if (jugada === 'sortida') {
+    const defensaDalt = fesJugador('.blaus', 'mobil', 110, A / 2 - 70, 2);
+    const defensaBaix = fesJugador('.blaus', 'mobil', 110, A / 2 + 70, 3);
+    const pivot = fesJugador('.blaus', 'company', 260, A / 2, 6);
+    const bandaDalt = fesJugador('.blaus', 'company', 420, 60, 7);
+    const bandaBaix = fesJugador('.blaus', 'company', 420, A - 60, 11);
+    fesJugador('.blaus', '', 640, A / 2, 9);
+    // Un vermell vigila el pivot (el mig) i un altre esperarà per marcar un defensa.
+    fesJugador('.vermells', '', 305, A / 2 + 25, 10);
+    const marcador = fesJugador('.vermells', '', 330, A / 2 - 120, 9);
+    fesJugador('.vermells', '', 480, 140, 7);
+    Object.assign(pilota, { x: 78, y: A / 2 }); posa(pilota);
+    const obertDalt = { x: 160, y: 90 }, obertBaix = { x: 160, y: A - 90 };
+    if (cercles) capaZones.innerHTML = cercle(obertDalt) + cercle(obertBaix);
+    let pas = 1;
+    const frase1 = "El porter té la pilota. Obrim-nos! Porta els dos defenses cap a les bandes.";
+    const frase2 = "Passa-la al defensa que està sol.";
+    const frase3 = 'Ara, a la banda!';
+    repetir = () => Veu.diu([frase1, frase2, frase3][pas - 1]);
+    const obert = j => (cercles ? dist(j, j === defensaDalt ? obertDalt : obertBaix) <= 80 : (j === defensaDalt ? j.y < 170 : j.y > A - 170) && j.x < 320);
+    const marcat = Math.random() < 0.5 ? defensaDalt : defensaBaix;
+    const lliure = marcat === defensaDalt ? defensaBaix : defensaDalt;
+    arrossegables.push(defensaDalt, defensaBaix);
+    quanDeixa = async j => {
+      if (pas !== 1) return;
+      if (!obert(j)) { if (cercles) assenyalaJugador(j); return; }
+      const altre = j === defensaDalt ? defensaBaix : defensaDalt;
+      if (!obert(altre)) { if (cercles) assenyalaJugador(altre); return; }
+      // Tots dos oberts: un vermell en surt a marcar un.
+      pas = 2;
+      arrossegables.length = 0;
+      capaZones.innerHTML = '';
+      assenyala(null);
+      await mou(marcador, marcat.x + 55, marcat.y + (marcat === defensaDalt ? 25 : -25), 600);
+      tocables.push(defensaDalt, defensaBaix, pivot);
+      if (!demo) Veu.diu(frase2);
+    };
+    let ocupat = false;
+    quanToca = async j => {
+      if (ocupat || acabat) return;
+      ocupat = true;
+      if (pas === 2) {
+        if (j === pivot) {
+          fallada();
+          await mou(pilota, 230, A / 2 + 10, 450);
+          await Veu.diu('Pel mig no! És perillós, ens la poden prendre davant la porteria.');
+          await mou(pilota, 78, A / 2, 350);
+        } else if (j === marcat) {
+          fallada();
+          await mou(pilota, marcador.x - 20, marcador.y, 450);
+          await Veu.diu('Aquest està marcat! Passa-la al que està sol.');
+          await mou(pilota, 78, A / 2, 350);
+        } else {
+          await mou(pilota, lliure.x + 25, lliure.y, 550);
+          pas = 3;
+          tocables.length = 0;
+          tocables.push(pivot, bandaDalt, bandaBaix);
+          if (!demo) Veu.diu(frase3);
+        }
+        ocupat = false;
+        return;
+      }
+      if (pas === 3) {
+        const banda = lliure === defensaDalt ? bandaDalt : bandaBaix;
+        if (j === banda) {
+          acabat = true;
+          await mou(pilota, banda.x + 25, banda.y, 550);
+          await Promise.all([mou(banda, 600, banda.y, 700), mou(pilota, 625, banda.y, 700)]);
+          return fet('Molt bé! Hem sortit jugant per la banda!');
+        }
+        fallada();
+        await Veu.diu(j === pivot ? 'Pel mig no! Per la banda és més segur.' : 'Aquest és a l\'altra banda, massa lluny. Passa-la al de la teva banda!');
+        ocupat = false;
+      }
+    };
+    if (demo) {
+      diu(frase1).then(async () => {
+        await demoArrossega(defensaDalt, obertDalt.x, obertDalt.y);
+        await demoArrossega(defensaBaix, obertBaix.x, obertBaix.y);
+        if (elTorn !== torn) return;
+        await quanDeixa(defensaBaix);
+        await Veu.diu(`Mira! ${frase2}`);
+        await demoToca(lliure);
+        if (elTorn !== torn) return;
+        await quanToca(lliure);
+        await Veu.diu(`Mira! ${frase3}`);
+        const banda = lliure === defensaDalt ? bandaDalt : bandaBaix;
+        await demoToca(banda);
+        if (elTorn === torn) quanToca(banda);
+      });
+    } else { Veu.diu(frase1); if (cercles) assenyalaJugador(defensaDalt); }
     return;
   }
 
@@ -2391,6 +2487,31 @@ const PISSARRA_INICI = {
   vermells: [[955, 310], [790, 130], [820, 310], [790, 490], [610, 200], [610, 420], [520, 310]],
   pilota: [500, 250],
 };
+// Posicions preparades per explicar idees (porter + 2 defenses + 3 mitjos + 1 davanter).
+const PISSARRA_POSICIONS = {
+  inici: { nom: 'Inici', emoji: '↺', ...PISSARRA_INICI },
+  // El porter té la pilota: els defenses s'obren a les bandes, el pivot baixa, els de banda oberts i amunt.
+  sortida: {
+    nom: 'Sortida', emoji: '🧤',
+    blaus: [[45, 310], [150, 90], [150, 530], [240, 310], [400, 60], [400, 560], [620, 310]],
+    vermells: [[955, 310], [700, 200], [700, 420], [520, 310], [430, 180], [430, 440], [300, 300]],
+    pilota: [75, 310],
+  },
+  // Atacant: ben oberts per la banda, un amunt i l'equip acompanya.
+  atac: {
+    nom: 'Atac', emoji: '⚽',
+    blaus: [[130, 310], [330, 150], [330, 470], [500, 310], [720, 55], [700, 560], [850, 300]],
+    vermells: [[955, 310], [850, 220], [850, 400], [770, 310], [690, 190], [690, 430], [600, 310]],
+    pilota: [745, 70],
+  },
+  // Defensant: tots junts i per dins, entre la pilota i la porteria.
+  defensa: {
+    nom: 'Defensa', emoji: '🛡️',
+    blaus: [[45, 310], [150, 240], [150, 380], [250, 180], [250, 310], [250, 440], [370, 310]],
+    vermells: [[955, 310], [600, 200], [600, 420], [450, 310], [330, 110], [330, 310], [330, 510]],
+    pilota: [355, 320],
+  },
+};
 
 function pantallaPissarra() {
   torn++;
@@ -2405,8 +2526,10 @@ function pantallaPissarra() {
       <div class="retol">
         <button class="boto-menu" aria-label="Menú de futbol">☰</button>
         <span class="retol-emoji">📋</span><b>Pissarra</b>
+      </div>
+      <div class="eines-pissarra">
+        ${Object.entries(PISSARRA_POSICIONS).map(([id, p]) => `<button class="boto-eina" data-eina="posicio" data-posicio="${id}">${p.emoji} ${p.nom}</button>`).join('')}
         <button class="boto-eina" data-eina="contraris" aria-label="Mostrar o amagar contraris">👁 Vermells</button>
-        <button class="boto-eina" data-eina="reinicia" aria-label="Tornar a la posició inicial">↺</button>
       </div>
       <div class="zona-joc"></div>
     </main>`;
@@ -2433,15 +2556,19 @@ function pantallaPissarra() {
     };
     Estat.desa();
   };
-  app.querySelector('.retol').addEventListener('click', e => {
+  app.querySelector('.eines-pissarra').addEventListener('click', async e => {
     const b = e.target.closest('[data-eina]');
     if (!b) return;
     if (b.dataset.eina === 'contraris') { desat.contraris = !desat.contraris; mostraContraris(); desa(); }
-    if (b.dataset.eina === 'reinicia') {
-      PISSARRA_INICI.blaus.forEach(([x, y], i) => Object.assign(blaus[i], { x, y }));
-      PISSARRA_INICI.vermells.forEach(([x, y], i) => Object.assign(vermells[i], { x, y }));
-      Object.assign(pilota, { x: PISSARRA_INICI.pilota[0], y: PISSARRA_INICI.pilota[1] });
-      [...blaus, ...vermells, pilota].forEach(posa);
+    if (b.dataset.eina === 'posicio') {
+      // Els jugadors van caminant fins a la posició preparada.
+      const P = PISSARRA_POSICIONS[b.dataset.posicio];
+      Veu.diu(P.nom);
+      await Promise.all([
+        ...P.blaus.map(([x, y], i) => C.mou(blaus[i], x, y, 700)),
+        ...P.vermells.map(([x, y], i) => C.mou(vermells[i], x, y, 700)),
+        C.mou(pilota, P.pilota[0], P.pilota[1], 700),
+      ]);
       desa();
     }
   });

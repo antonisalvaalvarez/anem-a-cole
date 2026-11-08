@@ -471,6 +471,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round
 .inici-seccions .targeta .dibuix { font-size: 18vmin; }
 .inici-seccions .targeta .nom { font-size: 6vmin; }
 .menu-seccio.inici { align-content: center; }
+.eines-pissarra { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5vmin; margin-bottom: 1.5vmin; }
+.eines-pissarra .boto-eina { background: var(--blanc); box-shadow: var(--ombra); }
 .boto-eina { font-size: 3.4vmin; font-weight: 700; background: #F4EFE7; border-radius: 99px; padding: 1.2vmin 2.6vmin; }
 .boto-eina.apagat { opacity: 0.45; text-decoration: line-through; }
 .camp.pissarra .peca { cursor: grab; }
