@@ -1118,6 +1118,7 @@ const JUGADES = {
   corner: { emoji: '🚩', retol: 'Córner assajat' },
   passades: { emoji: '🔢', retol: "Passa de l'1 al 5" },
   sortida: { emoji: '🧤', retol: 'Surt des de darrere' },
+  bascula: { emoji: '🛡️', retol: 'Bascula i pressiona' },
 };
 const DEMOS_PER_JUGADA = 1;
 const CAMP = { L: 1000, A: 620 }; // la nostra porteria a x=0
@@ -1380,117 +1381,208 @@ function jugadaCamp(k) {
     return;
   }
 
-  /* --- Surt des de darrere --- */
+  /* --- Surt des de darrere: porter → lateral; el del mig i el davanter s'acosten a la banda; tria a qui passes --- */
   if (jugada === 'sortida') {
-    const defensaDalt = fesJugador('.blaus', 'mobil', 110, A / 2 - 70, 2);
-    const defensaBaix = fesJugador('.blaus', 'mobil', 110, A / 2 + 70, 3);
-    const pivot = fesJugador('.blaus', 'company', 260, A / 2, 6);
-    const bandaDalt = fesJugador('.blaus', 'company', 420, 60, 7);
-    const bandaBaix = fesJugador('.blaus', 'company', 420, A - 60, 11);
-    fesJugador('.blaus', '', 640, A / 2, 9);
-    // Un vermell vigila el pivot (el mig) i un altre esperarà per marcar un defensa.
-    // A vegades el pivot està sol: llavors sí que se li pot passar.
-    const pivotLliure = Math.random() < 0.35;
-    fesJugador('.vermells', '', pivotLliure ? 470 : 305, pivotLliure ? A / 2 + 150 : A / 2 + 25, 10);
-    const marcador = fesJugador('.vermells', '', 330, A / 2 - 120, 9);
-    fesJugador('.vermells', '', 480, 140, 7);
-    Object.assign(pilota, { x: 78, y: A / 2 }); posa(pilota);
-    const obertDalt = { x: 160, y: 90 }, obertBaix = { x: 160, y: A - 90 };
-    if (cercles) capaZones.innerHTML = cercle(obertDalt) + cercle(obertBaix);
-    let pas = 1;
-    const frase1 = "El porter té la pilota. Obrim-nos! Porta els dos defenses cap a les bandes.";
-    const frase2 = pivotLliure ? 'Passa-la a qui estigui sol. Mira el del mig!' : 'Passa-la al defensa que està sol.';
-    const frase3 = 'Ara, a la banda!';
-    repetir = () => Veu.diu([frase1, frase2, frase3][pas - 1]);
-    const obert = j => (cercles ? dist(j, j === defensaDalt ? obertDalt : obertBaix) <= 80 : (j === defensaDalt ? j.y < 170 : j.y > A - 170) && j.x < 320);
-    const marcat = Math.random() < 0.5 ? defensaDalt : defensaBaix;
-    const lliure = marcat === defensaDalt ? defensaBaix : defensaDalt;
-    arrossegables.push(defensaDalt, defensaBaix);
-    quanDeixa = async j => {
-      if (pas !== 1) return;
-      if (!obert(j)) { if (cercles) assenyalaJugador(j); return; }
-      const altre = j === defensaDalt ? defensaBaix : defensaDalt;
-      if (!obert(altre)) { if (cercles) assenyalaJugador(altre); return; }
-      // Tots dos oberts: un vermell en surt a marcar un.
-      pas = 2;
-      arrossegables.length = 0;
-      capaZones.innerHTML = '';
-      assenyala(null);
-      await mou(marcador, marcat.x + 55, marcat.y + (marcat === defensaDalt ? 25 : -25), 600);
-      tocables.push(defensaDalt, defensaBaix, pivot);
-      if (!demo) Veu.diu(frase2);
-    };
-    let ocupat = false;
+    const dalt = Math.random() < 0.5; // per quina banda sortim
+    const Y = y => (dalt ? y : A - y);
+    const lat = fesJugador('.blaus', '', 110, Y(A / 2 - 70), dalt ? 2 : 3);
+    fesJugador('.blaus', '', 110, Y(A / 2 + 70), dalt ? 3 : 2);
+    const mig = fesJugador('.blaus', 'company', 290, A / 2, 6);
+    const davanter = fesJugador('.blaus', 'company', 620, A / 2, 9);
+    fesJugador('.blaus', '', 560, Y(A - 70), dalt ? 11 : 7);
+    // A vegades un vermell vigila un dels dos que s'ofereixen.
+    const marcat = Math.random() < 0.6 ? (Math.random() < 0.5 ? mig : davanter) : null;
+    const vMig = fesJugador('.vermells', '', 420, A / 2 + 60, 10);
+    const vDav = fesJugador('.vermells', '', 760, A / 2 - 40, 4);
+    fesJugador('.vermells', '', 400, Y(A - 140), 7);
+    Object.assign(pilota, { x: 75, y: A / 2 }); posa(pilota);
+    const frase = marcat ? 'A qui li passes? Al que estigui sol!' : 'A qui li passes? Al del mig o al davanter?';
+    repetir = () => Veu.diu(frase);
+    let triar = false, ocupat = false;
+    const llocMig = { x: 270, y: Y(190) }, llocDav = { x: 420, y: Y(120) };
     quanToca = async j => {
-      if (ocupat || acabat) return;
+      if (!triar || ocupat || acabat) return;
       ocupat = true;
-      if (pas === 2) {
-        if (j === pivot && pivotLliure) {
-          // El del mig està sol i ben ensenyat: sí que li podem passar.
-          await mou(pilota, pivot.x - 25, pivot.y, 550);
-          pas = 4;
-          tocables.length = 0;
-          tocables.push(bandaDalt, bandaBaix);
-          if (!demo) Veu.diu('Molt bé, estava sol! Ara obre-la a una banda.');
-          ocupat = false;
-          return;
-        }
-        if (j === pivot) {
-          fallada();
-          await mou(pilota, 230, A / 2 + 10, 450);
-          await Veu.diu('Pel mig no! És perillós, ens la poden prendre davant la porteria.');
-          await mou(pilota, 78, A / 2, 350);
-        } else if (j === marcat) {
-          fallada();
-          await mou(pilota, marcador.x - 20, marcador.y, 450);
-          await Veu.diu('Aquest està marcat! Passa-la al que està sol.');
-          await mou(pilota, 78, A / 2, 350);
-        } else {
-          await mou(pilota, lliure.x + 25, lliure.y, 550);
-          pas = 3;
-          tocables.length = 0;
-          tocables.push(pivot, bandaDalt, bandaBaix);
-          if (!demo) Veu.diu(frase3);
-        }
+      if (j === marcat) {
+        fallada();
+        const v = j === mig ? vMig : vDav;
+        await mou(pilota, v.x - 15, v.y, 450);
+        await Veu.diu("Aquest està marcat! Passa-la al que està sol.");
+        await mou(pilota, lat.x + 25, lat.y, 350);
         ocupat = false;
         return;
       }
-      if (pas === 4) {
-        // Des del mig, qualsevol banda és bona.
-        acabat = true;
-        await mou(pilota, j.x + 25, j.y, 550);
-        await Promise.all([mou(j, 600, j.y, 700), mou(pilota, 625, j.y, 700)]);
-        return fet('Molt bé! Pel mig quan està sol, i després a la banda!');
-      }
-      if (pas === 3) {
-        const banda = lliure === defensaDalt ? bandaDalt : bandaBaix;
-        if (j === banda) {
-          acabat = true;
-          await mou(pilota, banda.x + 25, banda.y, 550);
-          await Promise.all([mou(banda, 600, banda.y, 700), mou(pilota, 625, banda.y, 700)]);
-          return fet('Molt bé! Hem sortit jugant per la banda!');
-        }
-        fallada();
-        await Veu.diu(j === pivot ? 'Pel mig no! Per la banda és més segur.' : 'Aquest és a l\'altra banda, massa lluny. Passa-la al de la teva banda!');
-        ocupat = false;
-      }
+      acabat = true;
+      await mou(pilota, j.x + 22, j.y, 550);
+      await Promise.all([mou(j, j.x + 160, j.y, 600), mou(pilota, j.x + 182, j.y, 600)]);
+      fet(j === mig ? 'Molt bé! El del mig ja la té.' : 'Molt bé! El davanter ja la té.');
     };
-    if (demo) {
-      diu(frase1).then(async () => {
-        await demoArrossega(defensaDalt, obertDalt.x, obertDalt.y);
-        await demoArrossega(defensaBaix, obertBaix.x, obertBaix.y);
-        if (elTorn !== torn) return;
-        await quanDeixa(defensaBaix);
-        await Veu.diu(`Mira! ${frase2}`);
-        await demoToca(lliure);
-        if (elTorn !== torn) return;
-        await quanToca(lliure);
-        await Veu.diu(`Mira! ${frase3}`);
-        const banda = lliure === defensaDalt ? bandaDalt : bandaBaix;
-        await demoToca(banda);
-        if (elTorn === torn) quanToca(banda);
+    tocables.push(mig, davanter);
+    (async () => {
+      await diu('El porter té la pilota. Els laterals s\'obren.');
+      if (elTorn !== torn) return;
+      await mou(lat, 160, Y(85), 600);
+      await mou(pilota, lat.x + 25, lat.y, 600);
+      if (elTorn !== torn) return;
+      await Veu.diu(`${demo ? 'Mira! ' : ''}El del mig i el davanter van cap a la banda, per ajudar.`);
+      if (elTorn !== torn) return;
+      // Els vermells els segueixen: el que vigila s'hi enganxa.
+      await Promise.all([
+        mou(mig, llocMig.x, llocMig.y, 800), mou(davanter, llocDav.x, llocDav.y, 800),
+        mou(vMig, marcat === mig ? llocMig.x + 45 : 430, marcat === mig ? llocMig.y + (dalt ? 30 : -30) : A / 2 + 40, 800),
+        mou(vDav, marcat === davanter ? llocDav.x + 45 : 720, marcat === davanter ? llocDav.y + (dalt ? 30 : -30) : A / 2, 800),
+      ]);
+      if (elTorn !== torn) return;
+      triar = true;
+      if (!demo) return Veu.diu(frase);
+      await Veu.diu(`Mira! ${frase}`);
+      const bo = marcat === mig ? davanter : mig;
+      await demoToca(bo);
+      if (elTorn === torn) quanToca(bo);
+    })();
+    return;
+  }
+
+  /* --- Bascula i pressiona: l'equip es mou junt cap a la banda de la pilota i pressionen els dos més a prop --- */
+  if (jugada === 'bascula') {
+    const forma = [[170, -80, 2], [170, 80, 3], [290, -135, 7], [290, 0, 6], [290, 135, 11], [410, 0, 9]];
+    const equip = forma.map(([x, dy, n]) => Object.assign(fesJugador('.blaus', 'mobil', x, A / 2 + dy, n), { dy, x0: x }));
+    const portador = fesJugador('.vermells', '', 540, A / 2, 10);
+    // Els extrems vermells, a les bandes: quan reben, els més a prop són el nostre lateral i el nostre mig de banda.
+    const vDalt = fesJugador('.vermells', '', 285, 32, 7);
+    const vBaix = fesJugador('.vermells', '', 285, A - 32, 11);
+    fesJugador('.vermells', '', 640, A / 2 - 120, 8);
+    fesJugador('.vermells', '', 640, A / 2 + 120, 9);
+    Object.assign(pilota, { x: portador.x - 25, y: portador.y }); posa(pilota);
+    const CENTRE = { dalt: A / 2 - 95, baix: A / 2 + 95 };
+    let bloc = A / 2;
+    const posaBloc = y => {
+      bloc = Math.max(A / 2 - 140, Math.min(A / 2 + 140, y));
+      equip.forEach(j => { j.x = j.x0; j.y = bloc + j.dy; posa(j); });
+    };
+    const ordre = Math.random() < 0.5 ? ['dalt', 'baix'] : ['baix', 'dalt'];
+    let costat = null, fase = 'mira', triats = [];
+    const fantasmes = y => { if (cercles) capaZones.innerHTML = equip.map(j => cercle({ x: j.x0, y: y + j.dy }, 40)).join(''); };
+    const dosMesAProp = () => [...equip].sort((a, b) => dist(a, pilota) - dist(b, pilota)).slice(0, 2);
+
+    async function banda(i) {
+      costat = ordre[i];
+      const receptor = costat === 'dalt' ? vDalt : vBaix;
+      await mou(pilota, receptor.x - 25, receptor.y, 700);
+      if (elTorn !== torn) return;
+      fase = 'bascula';
+      fantasmes(CENTRE[costat]);
+      const f = i === 0 ? "La pilota ha anat a la banda! Mou tot l'equip cap a la pilota." : "Ara és a l'altra banda! Tots cap allà.";
+      repetir = () => Veu.diu(f);
+      if (!demo) { Veu.diu(f); if (cercles) assenyalaJugador(equip[3]); return; }
+      await Veu.diu(`Mira! ${f}`);
+      // La mà arrossega l'equip.
+      const sis = equip[3];
+      await mouMa(aPantalla(sis.x, sis.y), 500);
+      const y0 = bloc, y1 = CENTRE[costat], t0 = performance.now();
+      await new Promise(r => {
+        const pas = ara => {
+          if (elTorn !== torn) return r();
+          const t = Math.min(1, (ara - t0) / 900);
+          posaBloc(y0 + (y1 - y0) * t);
+          mouMa(aPantalla(sis.x, sis.y), 0);
+          t < 1 ? requestAnimationFrame(pas) : r();
+        };
+        requestAnimationFrame(pas);
       });
-    } else { Veu.diu(frase1); if (cercles) assenyalaJugador(defensaDalt); }
+      if (elTorn !== torn) return;
+      await deixaBloc();
+      for (const j of dosMesAProp()) { if (elTorn !== torn) return; await demoToca(j); await toca(j); }
+    }
+
+    async function deixaBloc() {
+      if (fase !== 'bascula') return;
+      if (Math.abs(bloc - CENTRE[costat]) > 45) {
+        if (Math.abs(bloc - A / 2) > 20) { fallada(); Veu.diu('Més cap a la pilota! Tots junts.'); }
+        return;
+      }
+      posaBloc(CENTRE[costat]);
+      capaZones.innerHTML = '';
+      assenyala(null);
+      fase = 'pressio';
+      triats = [];
+      const f = 'Molt bé! Ara, qui pressiona? Toca els dos més a prop de la pilota.';
+      repetir = () => Veu.diu(f);
+      if (!demo) Veu.diu(f); else await Veu.diu(`Mira! ${f}`);
+    }
+
+    async function toca(j) {
+      if (fase !== 'pressio' || triats.includes(j)) return;
+      const bons = dosMesAProp();
+      if (!bons.includes(j)) { fallada(); Veu.diu("Aquest està lluny. Els dos més a prop de la pilota!"); return; }
+      triats.push(j);
+      j.g.classList.add('triat');
+      if (triats.length < 2) return;
+      fase = 'ajuda';
+      // Pressionen els dos: un de cara i l'altre tancant per dins. Els altres ajuden.
+      const s = costat === 'dalt' ? 1 : -1;
+      const [a, b] = bons;
+      const resta = equip.filter(x => !bons.includes(x));
+      const cobreix = resta.sort((p, q) => dist(p, pilota) - dist(q, pilota))[0];
+      await Promise.all([
+        mou(a, pilota.x - 45, pilota.y + s * 15, 600),
+        mou(b, pilota.x - 25, pilota.y + s * 70, 600),
+        mou(cobreix, pilota.x - 150, pilota.y + s * 110, 600),
+        ...resta.filter(x => x !== cobreix).map(x => mou(x, x.x, x.y + s * 40, 600)),
+      ]);
+      equip.forEach(x => x.g.classList.remove('triat'));
+      if (elTorn !== torn) return;
+      await Veu.diu(`Pressionen el ${NUMEROS[a.num]} i el ${NUMEROS[b.num]}. El ${NUMEROS[cobreix.num]} tapa per darrere i els altres tanquen el mig.`);
+      if (elTorn !== torn) return;
+      if (ordre.indexOf(costat) === 0) {
+        // Tornen a la seva forma i la pilota canvia de banda.
+        equip.forEach(x => { x.x0 = x.x0; });
+        await Promise.all(equip.map(x => mou(x, x.x0, bloc + x.dy, 500)));
+        return banda(1);
+      }
+      fet("Molt bé! Hem basculat junts i hem pressionat de dos en dos!");
+    }
+
+    // Arrossegar tot l'equip de cop (amunt i avall).
+    let agafat = null, ultimY = 0;
+    svg.addEventListener('pointerdown', e => {
+      if (demo || fase !== 'bascula') return;
+      const p = aMon(e);
+      if (!equip.some(j => dist(j, p) < 75)) return;
+      svg.setPointerCapture(e.pointerId);
+      agafat = e.pointerId; ultimY = p.y;
+      equip.forEach(j => j.g.classList.add('agafat'));
+      assenyala(null);
+    });
+    svg.addEventListener('pointermove', e => {
+      if (agafat !== e.pointerId) return;
+      const p = aMon(e);
+      posaBloc(bloc + (p.y - ultimY));
+      ultimY = p.y;
+    });
+    const deixa = e => {
+      if (agafat !== e.pointerId) return;
+      agafat = null;
+      equip.forEach(j => j.g.classList.remove('agafat'));
+      deixaBloc();
+    };
+    svg.addEventListener('pointerup', deixa);
+    svg.addEventListener('pointercancel', deixa);
+    svg.addEventListener('pointerdown', e => {
+      if (demo || fase !== 'pressio') return;
+      const p = aMon(e);
+      const j = equip.find(x => dist(x, p) < 60);
+      if (j) toca(j);
+    });
+
+    (async () => {
+      const f0 = 'Defensem. Quan la pilota és al mig, estem junts al mig.';
+      repetir = () => Veu.diu(f0);
+      await diu(f0);
+      if (elTorn !== torn) return;
+      await espera(400);
+      banda(0);
+    })();
     return;
   }
 

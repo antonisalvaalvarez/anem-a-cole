@@ -28,7 +28,7 @@ App web instal·lable (PWA) per ajudar un nen de 6 anys (1r de primària) a apre
 
 ## Jocs
 - L'inici té 3 seccions: 🎒 Col·legi (Lletres, Síl·labes, Paraules, Números, Compta), 🎲 Jocs (Uneix, Globus, Parelles, Laberint) i ⚽ Futbol. La casa d'un joc torna al seu menú; la d'un menú, a l'inici.
-- Futbol inclou una Pissarra d'entrenador de futbol 7 (7 blaus, 7 vermells i la pilota, tot arrossegable; posicions preparades: Inici, Sortida, Atac i Defensa; amagar vermells; es guarda a la tablet). Jugada "Surt des de darrere": obrir els defenses a les bandes, passar al lliure i després a la banda; pel mig només si el pivot està sol (variant que surt a vegades).
+- Futbol inclou una Pissarra d'entrenador de futbol 7 (7 blaus, 7 vermells i la pilota, tot arrossegable; posicions preparades: Inici, Sortida, Atac i Defensa; amagar vermells; es guarda a la tablet). Jugada "Surt des de darrere": els laterals s'obren, el porter passa al lateral, el del mig i el davanter s'acosten a aquella banda i el nen tria a qui passa (al que està sol). Jugada "Bascula i pressiona": pilota al mig → tots junts al mig; pilota a una banda → arrossegar tot l'equip cap allà; tocar els dos més a prop per pressionar; es veu com els altres ajuden (un tapa per darrere, els altres tanquen el mig); després a l'altra banda.
 - Lletres, Síl·labes, Paraules.
 - Números (escolta i toca), Compta (quants n'hi ha), Uneix (dibuixar amb el dit en ordre sense creuar línies; a dalt, fila de números que es pinten quan es fan; nivells amb corbes obligatòries i fins al 15; si es creuen, "Tornem-hi!", mai "has perdut").
 - Globus (explotar els globus en ordre mentre pugen; si se'n va el que busca, torna a sortir) i Parelles (memòria: número amb quantitat o lletra amb dibuix).
